@@ -3,7 +3,7 @@ import 'signup_screen.dart';
 import 'dashboards/admin_dashboard.dart';
 import 'dashboards/tutor_dashboard.dart';
 import 'dashboards/student_dashboard.dart';
-import 'forget_password_screen.dart'; // ✅ Added Import
+import 'forget_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final String role;
@@ -108,9 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
 
-                        // ------------------------
-                        // 🔥 Forgot Password Button
-                        // ------------------------
+                        // Forgot Password Button
                         TextButton(
                           onPressed: () {
                             Navigator.push(
