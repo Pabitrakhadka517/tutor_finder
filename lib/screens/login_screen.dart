@@ -3,6 +3,7 @@ import 'signup_screen.dart';
 import 'dashboards/admin_dashboard.dart';
 import 'dashboards/tutor_dashboard.dart';
 import 'dashboards/student_dashboard.dart';
+import 'forget_password_screen.dart'; // ✅ Added Import
 
 class LoginScreen extends StatefulWidget {
   final String role;
@@ -106,9 +107,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
                         ),
+
+                        // ------------------------
+                        // 🔥 Forgot Password Button
+                        // ------------------------
                         TextButton(
                           onPressed: () {
-                            // TODO: Add Forgot Password Navigation
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ForgotPasswordScreen(),
+                              ),
+                            );
                           },
                           child: Text(
                             "Forgot Password?",
