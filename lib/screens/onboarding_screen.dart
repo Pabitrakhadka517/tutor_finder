@@ -183,7 +183,7 @@ class OnboardingPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Image with shadow, fixed height, rounded corners, and placeholder
+          // Image with shadow, fixed height, rounded
           Container(
             height: MediaQuery.of(context).size.height * 0.4,
             decoration: BoxDecoration(
