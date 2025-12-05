@@ -43,7 +43,7 @@ class RoleSelectionScreen extends StatelessWidget {
                   ),
                   child: ClipOval(
                     child: Image.asset(
-                      'assets/images/white_logo.png', // <-- your logo path
+                      'assets/images/white_logo.png', //  Here, logo path
                       width: 90,
                       height: 90,
                       fit: BoxFit.contain,
