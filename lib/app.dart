@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tutor_finder/theme/theme.dart';
 import 'screens/splash_screen.dart';
 
 class MyApp extends StatelessWidget {
@@ -8,12 +9,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Tutor Finder', // app title
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Roboto', // optional: set a global font
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
+      title: 'LearnMentor',
+      theme: getAppTheme(), // apply the global theme
       home: const SplashScreen(),
     );
   }
