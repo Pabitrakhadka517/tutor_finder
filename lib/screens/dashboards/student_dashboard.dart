@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+// ✅ CORRECT RELATIVE IMPORTS
+import '../student/home_screen.dart';
+import '../student/search_screen.dart';
+import '../student/bookings_screen.dart';
+import '../student/chat_screen.dart';
+import '../student/profile_screen.dart';
+
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
 
@@ -10,7 +17,13 @@ class StudentDashboard extends StatefulWidget {
 class _StudentDashboardState extends State<StudentDashboard> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [HomePage(), BookingsPage(), ProfilePage()];
+  final List<Widget> _pages = const [
+    StudentHomeScreen(),
+    StudentSearchScreen(),
+    StudentBookingsScreen(),
+    StudentChatScreen(),
+    StudentProfileScreen(),
+  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -21,9 +34,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Student Dashboard'), // uses AppBarTheme
-      ),
+      appBar: AppBar(title: const Text('Student Dashboard')),
+
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -37,95 +49,40 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 ).textTheme.titleLarge?.copyWith(color: Colors.white),
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: Text(
-                'Home',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              onTap: () {
-                _onItemTapped(0);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.book),
-              title: Text(
-                'Bookings',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              onTap: () {
-                _onItemTapped(1);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: Text(
-                'Profile',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              onTap: () {
-                _onItemTapped(2);
-                Navigator.pop(context);
-              },
-            ),
+            _drawerItem(Icons.home, 'Home', 0),
+            _drawerItem(Icons.search, 'Find Tutor', 1),
+            _drawerItem(Icons.book, 'Bookings', 2),
+            _drawerItem(Icons.chat, 'Messages', 3),
+            _drawerItem(Icons.person, 'Profile', 4),
           ],
         ),
       ),
+
       body: _pages[_selectedIndex],
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
           BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Bookings'),
+          BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
   }
-}
 
-// Pages using theme text
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Search and browse tutors',
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
-    );
-  }
-}
-
-class BookingsPage extends StatelessWidget {
-  const BookingsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Your upcoming lessons',
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
-    );
-  }
-}
-
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Edit your profile here',
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
+  Widget _drawerItem(IconData icon, String title, int index) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      onTap: () {
+        _onItemTapped(index);
+        Navigator.pop(context);
+      },
     );
   }
 }
