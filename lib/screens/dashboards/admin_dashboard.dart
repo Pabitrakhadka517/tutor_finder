@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:tutor_finder/screens/admin/home_screen.dart';
+import 'package:tutor_finder/screens/admin/profile_screen.dart';
+import 'package:tutor_finder/screens/admin/reports_screen.dart';
+import 'package:tutor_finder/screens/admin/requests_screen.dart';
+import 'package:tutor_finder/screens/admin/users_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -11,9 +16,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    const UsersPage(),
-    const ActivityPage(),
-    const SettingsPage(),
+    const AdminHomeScreen(),
+    const AdminUsersScreen(),
+    const AdminRequestsScreen(),
+    const AdminReportsScreen(),
+    const AdminProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -25,9 +32,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Dashboard'), // uses AppBarTheme
-      ),
+      appBar: AppBar(title: const Text('Admin Dashboard')),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -42,35 +47,42 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.person),
-              title: Text(
-                'Users',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              leading: const Icon(Icons.dashboard),
+              title: const Text('Home'),
               onTap: () {
                 _onItemTapped(0);
                 Navigator.pop(context);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.analytics),
-              title: Text(
-                'Activity',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              leading: const Icon(Icons.person),
+              title: const Text('Users'),
               onTap: () {
                 _onItemTapped(1);
                 Navigator.pop(context);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.settings),
-              title: Text(
-                'Settings',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              leading: const Icon(Icons.pending_actions),
+              title: const Text('Requests'),
               onTap: () {
                 _onItemTapped(2);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bar_chart),
+              title: const Text('Reports'),
+              onTap: () {
+                _onItemTapped(3);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Profile'),
+              onTap: () {
+                _onItemTapped(4);
                 Navigator.pop(context);
               },
             ),
@@ -81,60 +93,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Users'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Activity',
+            icon: Icon(Icons.pending_actions),
+            label: 'Requests',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
+            icon: Icon(Icons.bar_chart),
+            label: 'Reports',
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Profile'),
         ],
-      ),
-    );
-  }
-}
-
-// Pages using theme text
-class UsersPage extends StatelessWidget {
-  const UsersPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'List of all users here',
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
-    );
-  }
-}
-
-class ActivityPage extends StatelessWidget {
-  const ActivityPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Recent activity logs',
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
-    );
-  }
-}
-
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Admin settings here',
-        style: Theme.of(context).textTheme.bodyMedium,
       ),
     );
   }
