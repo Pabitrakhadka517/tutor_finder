@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+// ✅ Import your tutor screens
+import 'package:tutor_finder/screens/tutor/chat_screen.dart';
+import 'package:tutor_finder/screens/tutor/home_screen.dart';
+import 'package:tutor_finder/screens/tutor/profile_screen.dart';
+import 'package:tutor_finder/screens/tutor/schedule_screen.dart';
+import 'package:tutor_finder/screens/tutor/subject_screen.dart';
+
 class TutorDashboard extends StatefulWidget {
   const TutorDashboard({super.key});
 
@@ -11,9 +18,11 @@ class _TutorDashboardState extends State<TutorDashboard> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    RequestsPage(),
-    SchedulePage(),
-    ProfilePage(),
+    TutorHomeScreen(),
+    TutorScheduleScreen(),
+    TutorSubjectScreen(),
+    TutorChatScreen(),
+    TutorProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -25,9 +34,8 @@ class _TutorDashboardState extends State<TutorDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tutor Dashboard'), // uses AppBarTheme
-      ),
+      appBar: AppBar(title: const Text('Tutor Dashboard')),
+
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -41,98 +49,46 @@ class _TutorDashboardState extends State<TutorDashboard> {
                 ).textTheme.titleLarge?.copyWith(color: Colors.white),
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.list),
-              title: Text(
-                'Requests',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              onTap: () {
-                _onItemTapped(0);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.schedule),
-              title: Text(
-                'Schedule',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              onTap: () {
-                _onItemTapped(1);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: Text(
-                'Profile',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              onTap: () {
-                _onItemTapped(2);
-                Navigator.pop(context);
-              },
-            ),
+            _drawerItem(Icons.home, 'Home', 0),
+            _drawerItem(Icons.calendar_today, 'Schedule', 1),
+            _drawerItem(Icons.menu_book, 'Subjects', 2),
+            _drawerItem(Icons.chat, 'Chat', 3),
+            _drawerItem(Icons.person, 'Profile', 4),
           ],
         ),
       ),
+
       body: _pages[_selectedIndex],
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Requests'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.schedule),
+            icon: Icon(Icons.calendar_today),
             label: 'Schedule',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book),
+            label: 'Subjects',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
   }
-}
 
-// Pages using theme text
-class RequestsPage extends StatelessWidget {
-  const RequestsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Incoming booking requests',
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
-    );
-  }
-}
-
-class SchedulePage extends StatelessWidget {
-  const SchedulePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Manage your schedule',
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
-    );
-  }
-}
-
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Edit your profile and subjects',
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
+  Widget _drawerItem(IconData icon, String title, int index) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      onTap: () {
+        _onItemTapped(index);
+        Navigator.pop(context);
+      },
     );
   }
 }
