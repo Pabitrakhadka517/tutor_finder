@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'signup_screen.dart';
-import 'dashboards/admin_dashboard.dart';
 import 'dashboards/tutor_dashboard.dart';
 import 'dashboards/student_dashboard.dart';
 import 'forget_password_screen.dart';
@@ -264,12 +263,6 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const StudentDashboard()),
-        );
-        break;
-      case 'Admin':
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AdminDashboard()),
         );
         break;
     }

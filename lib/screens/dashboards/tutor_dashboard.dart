@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 // ✅ Import your tutor screens
 import 'package:tutor_finder/screens/tutor/chat_screen.dart';
 import 'package:tutor_finder/screens/tutor/home_screen.dart';
+import 'package:tutor_finder/screens/tutor/payment_screen.dart'; // create this screen
 import 'package:tutor_finder/screens/tutor/profile_screen.dart';
 import 'package:tutor_finder/screens/tutor/schedule_screen.dart';
-import 'package:tutor_finder/screens/tutor/subject_screen.dart';
 
 class TutorDashboard extends StatefulWidget {
   const TutorDashboard({super.key});
@@ -17,12 +17,12 @@ class TutorDashboard extends StatefulWidget {
 class _TutorDashboardState extends State<TutorDashboard> {
   int _selectedIndex = 0;
 
+  // ✅ Pages corresponding to bottom nav
   final List<Widget> _pages = const [
-    TutorHomeScreen(),
-    TutorScheduleScreen(),
-    TutorSubjectScreen(),
-    TutorChatScreen(),
-    TutorProfileScreen(),
+    TutorHomeScreen(), // 0: Home
+    TutorScheduleScreen(), // 1: Schedule
+    TutorPaymentScreen(), // 2: Payment
+    TutorChatScreen(), // 3: Chat
   ];
 
   void _onItemTapped(int index) {
@@ -34,7 +34,33 @@ class _TutorDashboardState extends State<TutorDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tutor Dashboard')),
+      appBar: AppBar(
+        title: const Text('Tutor Dashboard'),
+        actions: [
+          // 🔔 Notifications
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('No new notifications')),
+              );
+            },
+          ),
+
+          // 👤 Profile
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TutorProfileScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
 
       drawer: Drawer(
         child: ListView(
@@ -51,9 +77,22 @@ class _TutorDashboardState extends State<TutorDashboard> {
             ),
             _drawerItem(Icons.home, 'Home', 0),
             _drawerItem(Icons.calendar_today, 'Schedule', 1),
-            _drawerItem(Icons.menu_book, 'Subjects', 2),
+            _drawerItem(Icons.payment, 'Payment', 2),
             _drawerItem(Icons.chat, 'Chat', 3),
-            _drawerItem(Icons.person, 'Profile', 4),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Profile'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TutorProfileScreen(),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -70,12 +109,8 @@ class _TutorDashboardState extends State<TutorDashboard> {
             icon: Icon(Icons.calendar_today),
             label: 'Schedule',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'Subjects',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.payment), label: 'Payment'),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );

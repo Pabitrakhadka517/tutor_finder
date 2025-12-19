@@ -88,13 +88,6 @@ class RoleSelectionScreen extends StatelessWidget {
                   glowColor: Colors.blueAccent,
                 ),
                 const SizedBox(height: 22),
-
-                _roleCard(
-                  context,
-                  role: "Admin",
-                  icon: Icons.admin_panel_settings_rounded,
-                  glowColor: Colors.cyanAccent,
-                ),
               ],
             ),
           ),

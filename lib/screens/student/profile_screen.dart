@@ -5,10 +5,10 @@ class StudentProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Edit profile, settings & logout',
-        style: Theme.of(context).textTheme.bodyMedium,
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profile')),
+      body: const Center(
+        child: Text('Student Profile', style: TextStyle(fontSize: 22)),
       ),
     );
   }
