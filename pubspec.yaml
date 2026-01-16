@@ -53,6 +53,12 @@ dependencies:
   
   # Equatable for value comparison
   equatable: ^2.0.7
+  
+  # HTTP Client
+  dio: ^5.4.0
+  
+  # Secure Storage for tokens
+  flutter_secure_storage: ^9.0.0
 
 dev_dependencies:
   flutter_test:

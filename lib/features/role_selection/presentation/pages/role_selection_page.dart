@@ -28,14 +28,14 @@ class RoleSelectionPage extends StatelessWidget {
                   padding: const EdgeInsets.all(25),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 15,
                         offset: const Offset(0, 6),
                       ),
@@ -119,14 +119,17 @@ class RoleSelectionPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(25),
           gradient: LinearGradient(
             colors: [
-              Colors.white.withOpacity(0.30),
-              Colors.white.withOpacity(0.15),
+              Colors.white.withValues(alpha: 0.30),
+              Colors.white.withValues(alpha: 0.15),
             ],
           ),
-          border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.2),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.5),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: glowColor.withOpacity(0.35),
+              color: glowColor.withValues(alpha: 0.35),
               blurRadius: 18,
               spreadRadius: 1,
               offset: const Offset(0, 6),

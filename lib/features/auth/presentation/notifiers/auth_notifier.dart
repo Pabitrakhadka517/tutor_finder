@@ -5,11 +5,15 @@ import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
+import '../../domain/usecases/register_admin_usecase.dart';
+import '../../domain/usecases/register_tutor_usecase.dart';
 import '../state/auth_state.dart';
 
 /// AuthNotifier manages authentication state
 class AuthNotifier extends StateNotifier<AuthState> {
   final RegisterUseCase registerUseCase;
+  final RegisterAdminUseCase registerAdminUseCase;
+  final RegisterTutorUseCase registerTutorUseCase;
   final LoginUseCase loginUseCase;
   final LogoutUseCase logoutUseCase;
   final GetCurrentUserUseCase getCurrentUserUseCase;
@@ -17,6 +21,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   AuthNotifier({
     required this.registerUseCase,
+    required this.registerAdminUseCase,
+    required this.registerTutorUseCase,
     required this.loginUseCase,
     required this.logoutUseCase,
     required this.getCurrentUserUseCase,
@@ -45,21 +51,52 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Register a new user
+  /// Register a new student
   Future<void> register({
     required String email,
     required String password,
-    required String name,
   }) async {
     state = const AuthState.loading();
 
     final result = await registerUseCase.call(
-      RegisterParams(email: email, password: password, name: name),
+      RegisterParams(email: email, password: password),
     );
 
     result.fold((failure) => state = AuthState.error(failure.message), (user) {
       // Emit registrationSuccess instead of authenticated
       // so RegisterPage can show success message and redirect to login
+      state = AuthState(status: AuthStatus.registrationSuccess, user: user);
+    });
+  }
+
+  /// Register a new admin
+  Future<void> registerAdmin({
+    required String email,
+    required String password,
+  }) async {
+    state = const AuthState.loading();
+
+    final result = await registerAdminUseCase.call(
+      RegisterAdminParams(email: email, password: password),
+    );
+
+    result.fold((failure) => state = AuthState.error(failure.message), (user) {
+      state = AuthState(status: AuthStatus.registrationSuccess, user: user);
+    });
+  }
+
+  /// Register a new tutor
+  Future<void> registerTutor({
+    required String email,
+    required String password,
+  }) async {
+    state = const AuthState.loading();
+
+    final result = await registerTutorUseCase.call(
+      RegisterTutorParams(email: email, password: password),
+    );
+
+    result.fold((failure) => state = AuthState.error(failure.message), (user) {
       state = AuthState(status: AuthStatus.registrationSuccess, user: user);
     });
   }

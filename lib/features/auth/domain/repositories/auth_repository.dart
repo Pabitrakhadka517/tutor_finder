@@ -4,13 +4,24 @@ import '../entities/user.dart';
 
 /// Repository interface for authentication
 /// This defines the contract that data layer must implement
-/// Domain layer doesn't know about implementation details
+/// API only requires email and password
 abstract class AuthRepository {
-  /// Register a new user
+  /// Register a new student
   Future<Either<Failure, User>> register({
     required String email,
     required String password,
-    required String name,
+  });
+
+  /// Register a new admin
+  Future<Either<Failure, User>> registerAdmin({
+    required String email,
+    required String password,
+  });
+
+  /// Register a new tutor
+  Future<Either<Failure, User>> registerTutor({
+    required String email,
+    required String password,
   });
 
   /// Login with email and password

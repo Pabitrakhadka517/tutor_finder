@@ -22,16 +22,25 @@ class UserModel extends User {
   @HiveField(4)
   final DateTime hiveCreatedAt;
 
+  @HiveField(5)
+  final String hiveRole;
+
   const UserModel({
     required this.hiveId,
     required this.hiveEmail,
     required this.hiveName,
     required this.hashedPassword,
     required this.hiveCreatedAt,
+    this.hiveRole = 'student',
   }) : super(
          id: hiveId,
          email: hiveEmail,
          name: hiveName,
+         role: hiveRole == 'admin'
+             ? UserRole.admin
+             : hiveRole == 'tutor'
+             ? UserRole.tutor
+             : UserRole.student,
          createdAt: hiveCreatedAt,
        );
 
@@ -43,6 +52,7 @@ class UserModel extends User {
       hiveName: user.name,
       hashedPassword: hashedPassword,
       hiveCreatedAt: user.createdAt,
+      hiveRole: user.role.name,
     );
   }
 
@@ -52,6 +62,11 @@ class UserModel extends User {
       id: hiveId,
       email: hiveEmail,
       name: hiveName,
+      role: hiveRole == 'admin'
+          ? UserRole.admin
+          : hiveRole == 'tutor'
+          ? UserRole.tutor
+          : UserRole.student,
       createdAt: hiveCreatedAt,
     );
   }
@@ -66,6 +81,7 @@ class UserModel extends User {
       hiveCreatedAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : DateTime.now(),
+      hiveRole: json['role'] as String? ?? 'student',
     );
   }
 
@@ -77,16 +93,39 @@ class UserModel extends User {
       'name': hiveName,
       'hashedPassword': hashedPassword,
       'createdAt': hiveCreatedAt.toIso8601String(),
+      'role': hiveRole,
     };
   }
 
-  /// Copy with method
-  UserModel copyWith({
+  /// Copy with method for UserModel-specific fields
+  @override
+  User copyWith({
+    String? id,
+    String? email,
+    String? name,
+    UserRole? role,
+    String? token,
+    String? refreshToken,
+    DateTime? createdAt,
+  }) {
+    return UserModel(
+      hiveId: id ?? hiveId,
+      hiveEmail: email ?? hiveEmail,
+      hiveName: name ?? hiveName,
+      hashedPassword: hashedPassword,
+      hiveCreatedAt: createdAt ?? hiveCreatedAt,
+      hiveRole: role?.name ?? hiveRole,
+    );
+  }
+
+  /// Copy with method for UserModel-specific fields including hashedPassword
+  UserModel copyWithModel({
     String? hiveId,
     String? hiveEmail,
     String? hiveName,
     String? hashedPassword,
     DateTime? hiveCreatedAt,
+    String? hiveRole,
   }) {
     return UserModel(
       hiveId: hiveId ?? this.hiveId,
@@ -94,6 +133,7 @@ class UserModel extends User {
       hiveName: hiveName ?? this.hiveName,
       hashedPassword: hashedPassword ?? this.hashedPassword,
       hiveCreatedAt: hiveCreatedAt ?? this.hiveCreatedAt,
+      hiveRole: hiveRole ?? this.hiveRole,
     );
   }
 }

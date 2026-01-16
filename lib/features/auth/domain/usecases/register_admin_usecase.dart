@@ -4,14 +4,14 @@ import '../../../../core/utils/either.dart';
 import '../entities/user.dart';
 import '../repositories/auth_repository.dart';
 
-/// Use case for registering a new user
-class RegisterUseCase implements UseCase<User, RegisterParams> {
+/// Use case for registering a new admin
+class RegisterAdminUseCase implements UseCase<User, RegisterAdminParams> {
   final AuthRepository repository;
 
-  RegisterUseCase(this.repository);
+  RegisterAdminUseCase(this.repository);
 
   @override
-  Future<Either<Failure, User>> call(RegisterParams params) async {
+  Future<Either<Failure, User>> call(RegisterAdminParams params) async {
     // Add validation logic here if needed
     if (params.email.isEmpty || !params.email.contains('@')) {
       return Either.left(
@@ -25,16 +25,16 @@ class RegisterUseCase implements UseCase<User, RegisterParams> {
       );
     }
 
-    return await repository.register(
+    return await repository.registerAdmin(
       email: params.email,
       password: params.password,
     );
   }
 }
 
-class RegisterParams {
+class RegisterAdminParams {
   final String email;
   final String password;
 
-  RegisterParams({required this.email, required this.password});
+  RegisterAdminParams({required this.email, required this.password});
 }

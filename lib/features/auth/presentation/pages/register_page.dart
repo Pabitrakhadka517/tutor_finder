@@ -14,7 +14,6 @@ class RegisterPage extends ConsumerStatefulWidget {
 
 class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _extraController1 = TextEditingController();
@@ -27,7 +26,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _extraController1.dispose();
@@ -38,24 +36,29 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   void _handleRegister() {
     if (_formKey.currentState!.validate()) {
-      ref
-          .read(authNotifierProvider.notifier)
-          .register(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-            name: _nameController.text.trim(),
-          );
-    }
-  }
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
 
-  String? _validateName(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Please enter your name';
+      // Call role-specific registration method
+      switch (role) {
+        case "Tutor":
+          ref
+              .read(authNotifierProvider.notifier)
+              .registerTutor(email: email, password: password);
+          break;
+        case "Admin":
+          ref
+              .read(authNotifierProvider.notifier)
+              .registerAdmin(email: email, password: password);
+          break;
+        case "Student":
+        default:
+          ref
+              .read(authNotifierProvider.notifier)
+              .register(email: email, password: password);
+          break;
+      }
     }
-    if (value.trim().length < 2) {
-      return 'Name must be at least 2 characters';
-    }
-    return null;
   }
 
   String? _validateEmail(String? value) {
@@ -171,7 +174,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -181,14 +184,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      _buildField(
-                        _nameController,
-                        "Full Name",
-                        Icons.person,
-                        validator: _validateName,
-                      ),
-                      const SizedBox(height: 16),
-
                       _buildField(
                         _emailController,
                         "Email",
