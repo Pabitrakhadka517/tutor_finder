@@ -34,3 +34,13 @@ class ValidationFailure extends Failure {
 class NetworkFailure extends Failure {
   const NetworkFailure(super.message);
 }
+
+/// Failure for API-related errors with status code
+class ApiFailure extends Failure {
+  final int? statusCode;
+
+  const ApiFailure(super.message, {this.statusCode});
+
+  @override
+  List<Object?> get props => [message, statusCode];
+}

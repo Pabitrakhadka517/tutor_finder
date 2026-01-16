@@ -1,55 +1,32 @@
-import '../../domain/entities/user.dart';
+import '../models/auth_response_model.dart';
 
-/// Remote data source for authentication
-/// This is a stub for future API integration
-/// Currently, it doesn't perform any actual operations
+/// Remote data source interface for authentication
+/// API only requires email and password
 abstract class AuthRemoteDataSource {
-  /// Register user via API (Future Implementation)
-  Future<User> register({
+  /// Register student via API
+  Future<AuthResponseModel> register({
     required String email,
     required String password,
-    required String name,
   });
 
-  /// Login user via API (Future Implementation)
-  Future<User> login({required String email, required String password});
-
-  /// Logout user via API (Future Implementation)
-  Future<void> logout();
-
-  /// Get current user from API (Future Implementation)
-  Future<User?> getCurrentUser();
-}
-
-class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  // This is a stub implementation
-  // In the future, inject HTTP client (Dio/http) here
-
-  @override
-  Future<User> register({
+  /// Register admin via API
+  Future<AuthResponseModel> registerAdmin({
     required String email,
     required String password,
-    required String name,
-  }) async {
-    // TODO: Implement API call
-    throw UnimplementedError('API integration not yet implemented');
-  }
+  });
 
-  @override
-  Future<User> login({required String email, required String password}) async {
-    // TODO: Implement API call
-    throw UnimplementedError('API integration not yet implemented');
-  }
+  /// Register tutor via API
+  Future<AuthResponseModel> registerTutor({
+    required String email,
+    required String password,
+  });
 
-  @override
-  Future<void> logout() async {
-    // TODO: Implement API call
-    throw UnimplementedError('API integration not yet implemented');
-  }
+  /// Login user via API
+  Future<AuthResponseModel> login({
+    required String email,
+    required String password,
+  });
 
-  @override
-  Future<User?> getCurrentUser() async {
-    // TODO: Implement API call
-    throw UnimplementedError('API integration not yet implemented');
-  }
+  /// Logout user via API
+  Future<bool> logout();
 }

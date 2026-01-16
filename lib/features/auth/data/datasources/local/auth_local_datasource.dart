@@ -49,11 +49,14 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     if (userId == null) return null;
 
     final box = await Hive.openBox<UserModel>(_usersBoxName);
-    // Find user by ID
-    return box.values.firstWhere(
-      (user) => user.hiveId == userId,
-      orElse: () => throw Exception('User not found'),
-    );
+    // Find user by ID - return null if not found instead of throwing
+    try {
+      return box.values.firstWhere((user) => user.hiveId == userId);
+    } catch (e) {
+      // User not found in box, clear the stale userId and return null
+      await removeCurrentUser();
+      return null;
+    }
   }
 
   @override

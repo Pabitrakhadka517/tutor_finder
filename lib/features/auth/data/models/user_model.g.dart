@@ -3,7 +3,7 @@
 part of 'user_model.dart';
 
 // **************************************************************************
-// TypeAdapter Generator
+// TypeAdapterGenerator
 // **************************************************************************
 
 class UserModelAdapter extends TypeAdapter<UserModel> {
@@ -22,13 +22,14 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       hiveName: fields[2] as String,
       hashedPassword: fields[3] as String,
       hiveCreatedAt: fields[4] as DateTime,
+      hiveRole: fields[5] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.hiveId)
       ..writeByte(1)
@@ -38,7 +39,9 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       ..writeByte(3)
       ..write(obj.hashedPassword)
       ..writeByte(4)
-      ..write(obj.hiveCreatedAt);
+      ..write(obj.hiveCreatedAt)
+      ..writeByte(5)
+      ..write(obj.hiveRole);
   }
 
   @override
