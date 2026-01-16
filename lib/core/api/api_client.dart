@@ -130,3 +130,6 @@ class _AuthInterceptor extends Interceptor {
     return handler.next(err);
   }
 }
+
+
+// api_client.dart ends here
