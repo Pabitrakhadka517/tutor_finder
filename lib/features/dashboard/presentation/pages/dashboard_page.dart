@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../profile/presentation/pages/profile_page.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -334,16 +335,23 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.edit_rounded,
-                color: Colors.blue.shade700,
-                size: 20,
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.edit_rounded,
+                  color: Colors.blue.shade700,
+                  size: 20,
+                ),
               ),
             ),
           ],
@@ -645,7 +653,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         unselectedItemColor: Colors.grey.shade400,
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
         currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        onTap: (index) {
+          if (index == 3) {
+            // Profile tab
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const ProfilePage()),
+            );
+          } else {
+            _onItemTapped(index);
+          }
+        },
         elevation: 0,
         items: const [
           BottomNavigationBarItem(
@@ -727,12 +744,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             const SizedBox(height: 24),
             ListTile(
               leading: Icon(Icons.edit_rounded, color: Colors.blue.shade700),
-              title: const Text('Edit Profile'),
+              title: const Text('View Profile'),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Edit Profile - Coming Soon!')),
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
                 );
               },
             ),
