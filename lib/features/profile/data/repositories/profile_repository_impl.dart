@@ -57,11 +57,22 @@ class ProfileRepositoryImpl implements IProfileRepository {
         'speciality': speciality,
         'address': address,
       };
-      
-      final updatedProfile = await remoteDataSource.updateProfile(fields, image);
-      await localDataSource.cacheProfile(updatedProfile);
+
+      final updatedProfile = await remoteDataSource.updateProfile(
+        fields,
+        image,
+      );
+
+      try {
+        await localDataSource.cacheProfile(updatedProfile);
+      } catch (cacheError) {
+        print('WARNING: Failed to cache profile: $cacheError');
+      }
+
       return Right(updatedProfile);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('PLEASE LOOK HERE - ERROR UPDATING PROFILE: $e');
+      print('Stack Trace: $stackTrace');
       return Left(ServerFailure(e.toString()));
     }
   }

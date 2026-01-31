@@ -45,4 +45,14 @@ class ApiEndpoints {
   // ================= Profile Endpoints =================
   static const String updateProfile = '/api/profile';
   static const String getProfile = '/api/profile';
+
+  // ================= Image Helper =================
+  static String? getImageUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http')) return path;
+
+    // Clean path to ensure no double slashes
+    final cleanPath = path.startsWith('/') ? path : '/$path';
+    return '$baseUrl$cleanPath';
+  }
 }
