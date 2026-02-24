@@ -22,6 +22,8 @@ class ProfileModel extends ProfileEntity {
   final String address;
   @HiveField(7)
   final String? profileImage;
+  @HiveField(8)
+  final String theme;
 
   const ProfileModel({
     required this.id,
@@ -32,6 +34,7 @@ class ProfileModel extends ProfileEntity {
     required this.speciality,
     required this.address,
     this.profileImage,
+    this.theme = 'light',
   }) : super(
          id: id,
          email: email,
@@ -41,6 +44,7 @@ class ProfileModel extends ProfileEntity {
          speciality: speciality,
          address: address,
          profileImage: profileImage,
+         theme: theme,
        );
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
@@ -53,6 +57,7 @@ class ProfileModel extends ProfileEntity {
       speciality: json['speciality'] ?? '',
       address: json['address'] ?? '',
       profileImage: ApiEndpoints.getImageUrl(json['profileImage']),
+      theme: json['theme'] ?? 'light',
     );
   }
 
@@ -67,6 +72,7 @@ class ProfileModel extends ProfileEntity {
       speciality: entity.speciality,
       address: entity.address,
       profileImage: entity.profileImage,
+      theme: entity.theme,
     );
   }
 }

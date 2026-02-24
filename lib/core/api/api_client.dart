@@ -82,6 +82,21 @@ class ApiClient {
     );
   }
 
+  // PATCH request
+  Future<Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return _dio.patch(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
   // DELETE request
   Future<Response> delete(
     String path, {
@@ -122,10 +137,45 @@ class _AuthInterceptor extends Interceptor {
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
     // Handle 401 Unauthorized - Token expired
-    if (err.response?.statusCode == 401) {
-      // TODO: Implement token refresh or logout
+    if (err.response?.statusCode == 401 &&
+        !err.requestOptions.path.contains('/auth/')) {
+      try {
+        final refreshToken = await _storage.read(key: 'refresh_token');
+        if (refreshToken == null) {
+          return handler.next(err);
+        }
+
+        // Attempt to refresh the token
+        final dio = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl));
+        final response = await dio.post(
+          ApiEndpoints.refreshToken,
+          data: {'refresh_token': refreshToken},
+        );
+
+        if (response.statusCode == 200 && response.data != null) {
+          final newAccessToken = response.data['access_token'];
+          final newRefreshToken = response.data['refresh_token'];
+
+          if (newAccessToken != null) {
+            await _storage.write(key: 'access_token', value: newAccessToken);
+          }
+          if (newRefreshToken != null) {
+            await _storage.write(key: 'refresh_token', value: newRefreshToken);
+          }
+
+          // Retry the original request with new token
+          final opts = err.requestOptions;
+          opts.headers['Authorization'] = 'Bearer $newAccessToken';
+          final retryResponse = await dio.fetch(opts);
+          return handler.resolve(retryResponse);
+        }
+      } catch (_) {
+        // Refresh failed - clear tokens
+        await _storage.delete(key: 'access_token');
+        await _storage.delete(key: 'refresh_token');
+      }
     }
     return handler.next(err);
   }

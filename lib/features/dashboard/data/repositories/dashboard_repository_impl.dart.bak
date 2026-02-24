@@ -1,0 +1,442 @@
+import 'package:injectable/injectable.dart';
+
+import '../../../../core/utils/either.dart';
+import '../../domain/entities/dashboard_entity.dart';
+import '../../domain/failures/dashboard_failure.dart';
+import '../../domain/repositories/dashboard_repository.dart';
+import '../../domain/value_objects/user_role.dart';
+import '../datasources/dashboard_local_datasource.dart';
+import '../datasources/dashboard_remote_datasource.dart';
+import '../models/dashboard_dto.dart';
+
+/// Implementation of dashboard repository
+///
+/// This repository coordinates between remote API calls and local caching
+/// to provide efficient and reliable dashboard data access.
+@Injectable(as: DashboardRepository)
+class DashboardRepositoryImpl implements DashboardRepository {
+  final IDashboardRemoteDataSource _remoteDataSource;
+  final IDashboardLocalDataSource _localDataSource;
+
+  const DashboardRepositoryImpl(this._remoteDataSource, this._localDataSource);
+
+  @override
+  Future<Either<DashboardFailure, StudentDashboardEntity>> getStudentDashboard(
+    String studentId,
+  ) async {
+    try {
+      // Check cache first
+      final cachedDashboard = await _localDataSource.getCachedStudentDashboard(
+        studentId,
+      );
+      final isCacheValid = await _localDataSource.isCacheValid(
+        studentId,
+        'student',
+      );
+
+      if (cachedDashboard != null && isCacheValid) {
+        return Right(cachedDashboard.toDomain());
+      }
+
+      // Fetch from remote if cache is invalid or missing
+      final remoteDashboard = await _remoteDataSource.getStudentDashboard(
+        studentId,
+      );
+
+      // Cache the fresh data
+      await _localDataSource.cacheStudentDashboard(studentId, remoteDashboard);
+
+      return Right(remoteDashboard.toDomain());
+    } on DashboardDataSourceException catch (e) {
+      return Left(_mapDataSourceExceptionToFailure(e));
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to get student dashboard: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, StudentDashboardEntity>>
+  getStudentDashboardByDateRange(
+    String studentId,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    try {
+      final remoteDashboard = await _remoteDataSource
+          .getStudentDashboardByDateRange(studentId, startDate, endDate);
+
+      return Right(remoteDashboard.toDomain());
+    } on DashboardDataSourceException catch (e) {
+      return Left(_mapDataSourceExceptionToFailure(e));
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to get student dashboard by date range: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, TutorDashboardEntity>> getTutorDashboard(
+    String tutorId,
+  ) async {
+    try {
+      // Check cache first
+      final cachedDashboard = await _localDataSource.getCachedTutorDashboard(
+        tutorId,
+      );
+      final isCacheValid = await _localDataSource.isCacheValid(
+        tutorId,
+        'tutor',
+      );
+
+      if (cachedDashboard != null && isCacheValid) {
+        return Right(cachedDashboard.toDomain());
+      }
+
+      // Fetch from remote if cache is invalid or missing
+      final remoteDashboard = await _remoteDataSource.getTutorDashboard(
+        tutorId,
+      );
+
+      // Cache the fresh data
+      await _localDataSource.cacheTutorDashboard(tutorId, remoteDashboard);
+
+      return Right(remoteDashboard.toDomain());
+    } on DashboardDataSourceException catch (e) {
+      return Left(_mapDataSourceExceptionToFailure(e));
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to get tutor dashboard: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, TutorDashboardEntity>>
+  getTutorDashboardByDateRange(
+    String tutorId,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    try {
+      final remoteDashboard = await _remoteDataSource
+          .getTutorDashboardByDateRange(tutorId, startDate, endDate);
+
+      return Right(remoteDashboard.toDomain());
+    } on DashboardDataSourceException catch (e) {
+      return Left(_mapDataSourceExceptionToFailure(e));
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to get tutor dashboard by date range: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, Map<String, dynamic>>> getDashboardSummary(
+    String userId,
+    UserRole role,
+  ) async {
+    try {
+      // Check cache first
+      final cachedSummary = await _localDataSource.getCachedDashboardSummary(
+        userId,
+        role.value,
+      );
+
+      if (cachedSummary != null) {
+        return Right({
+          'summary': cachedSummary.summary,
+          'quickStats': cachedSummary.quickStats,
+          'keyMetrics': cachedSummary.keyMetrics,
+          'lastCalculated': cachedSummary.lastCalculated.toIso8601String(),
+        });
+      }
+
+      // Fetch from remote
+      final remoteSummary = await _remoteDataSource.getDashboardSummary(
+        userId,
+        role.value,
+      );
+
+      // Cache the summary
+      await _localDataSource.cacheDashboardSummary(
+        userId,
+        role.value,
+        remoteSummary,
+      );
+
+      return Right({
+        'summary': remoteSummary.summary,
+        'quickStats': remoteSummary.quickStats,
+        'keyMetrics': remoteSummary.keyMetrics,
+        'lastCalculated': remoteSummary.lastCalculated.toIso8601String(),
+      });
+    } on DashboardDataSourceException catch (e) {
+      return Left(_mapDataSourceExceptionToFailure(e));
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to get dashboard summary: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, Map<String, List<dynamic>>>>
+  getDashboardTrends(
+    String userId,
+    UserRole role,
+    DateTime startDate,
+    DateTime endDate,
+    String interval,
+  ) async {
+    try {
+      // Check cache first
+      final cachedTrends = await _localDataSource.getCachedDashboardTrends(
+        userId,
+        role.value,
+      );
+
+      if (cachedTrends != null) {
+        return Right(cachedTrends);
+      }
+
+      // Fetch from remote
+      final remoteTrends = await _remoteDataSource.getDashboardTrends(
+        userId,
+        role.value,
+        startDate,
+        endDate,
+        interval,
+      );
+
+      // Cache the trends
+      await _localDataSource.cacheDashboardTrends(
+        userId,
+        role.value,
+        remoteTrends,
+      );
+
+      return Right(remoteTrends);
+    } on DashboardDataSourceException catch (e) {
+      return Left(_mapDataSourceExceptionToFailure(e));
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to get dashboard trends: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, Map<String, dynamic>>> getDashboardComparison(
+    String userId,
+    UserRole role,
+    DateTime currentStart,
+    DateTime currentEnd,
+    DateTime previousStart,
+    DateTime previousEnd,
+  ) async {
+    try {
+      final comparison = await _remoteDataSource.getDashboardComparison(
+        userId,
+        role.value,
+        currentStart,
+        currentEnd,
+        previousStart,
+        previousEnd,
+      );
+
+      return Right(comparison);
+    } on DashboardDataSourceException catch (e) {
+      return Left(_mapDataSourceExceptionToFailure(e));
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to get dashboard comparison: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, bool>> validateDashboardAccess(
+    String userId,
+    UserRole role,
+  ) async {
+    try {
+      final hasAccess = await _remoteDataSource.validateDashboardAccess(
+        userId,
+        role.value,
+      );
+
+      return Right(hasAccess);
+    } on DashboardDataSourceException catch (e) {
+      return Left(_mapDataSourceExceptionToFailure(e));
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to validate dashboard access: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, bool>> hasMinimumDataForDashboard(
+    String userId,
+    UserRole role,
+  ) async {
+    try {
+      final hasMinimumData = await _remoteDataSource.hasMinimumDataForDashboard(
+        userId,
+        role.value,
+      );
+
+      return Right(hasMinimumData);
+    } on DashboardDataSourceException catch (e) {
+      return Left(_mapDataSourceExceptionToFailure(e));
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to check minimum data requirement: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, void>> refreshDashboardCache(
+    String userId,
+    UserRole role,
+  ) async {
+    try {
+      // Clear existing cache
+      await _localDataSource.clearUserCache(userId, role.value);
+
+      // Trigger backend aggregation refresh
+      await _remoteDataSource.refreshDashboardAggregations(userId, role.value);
+
+      // Fetch fresh data based on role
+      if (role == UserRole.student) {
+        await getStudentDashboard(userId);
+      } else {
+        await getTutorDashboard(userId);
+      }
+
+      return const Right(null);
+    } on DashboardDataSourceException catch (e) {
+      return Left(_mapDataSourceExceptionToFailure(e));
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to refresh dashboard cache: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, void>> clearDashboardCache(
+    String userId,
+    UserRole role,
+  ) async {
+    try {
+      await _localDataSource.clearUserCache(userId, role.value);
+      return const Right(null);
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to clear dashboard cache: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, void>> clearAllDashboardCache() async {
+    try {
+      await _localDataSource.clearAllCache();
+      return const Right(null);
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to clear all dashboard cache: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DashboardFailure, Map<String, dynamic>>>
+  getDashboardCacheStatus(String userId, UserRole role) async {
+    try {
+      final cacheStatus = await _localDataSource.getCacheStatus(
+        userId,
+        role.value,
+      );
+
+      if (cacheStatus == null) {
+        return Right({
+          'exists': false,
+          'userId': userId,
+          'role': role.value,
+          'message': 'No cache found for user',
+        });
+      }
+
+      return Right(cacheStatus.getStatistics());
+    } catch (e) {
+      return Left(
+        DashboardFailure.unexpected(
+          'Failed to get cache status: ${e.toString()}',
+        ),
+      );
+    }
+  }
+
+  // Private helper methods
+
+  DashboardFailure _mapDataSourceExceptionToFailure(
+    DashboardDataSourceException exception,
+  ) {
+    if (exception.isNetworkError) {
+      return DashboardFailure.connectionError(exception.message);
+    }
+
+    if (exception.isAuthError) {
+      return DashboardFailure.permissionDenied(exception.message);
+    }
+
+    if (exception.isServerError) {
+      return DashboardFailure.serverError(exception.message);
+    }
+
+    if (exception.isRateLimit) {
+      return DashboardFailure.rateLimited(exception.message);
+    }
+
+    if (exception.statusCode == 404) {
+      return DashboardFailure.dataNotFound(exception.message);
+    }
+
+    if (exception.statusCode == 400) {
+      return DashboardFailure.validationError(exception.message);
+    }
+
+    return DashboardFailure.unexpected(exception.message);
+  }
+}

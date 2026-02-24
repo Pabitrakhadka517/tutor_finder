@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../../core/api/api_client.dart';
@@ -133,6 +134,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<bool> logout() async {
     try {
+      // Call server to invalidate refresh token
+      final refreshToken = await _secureStorage.read(key: 'refresh_token');
+      if (refreshToken != null) {
+        try {
+          await _apiClient.post(
+            ApiEndpoints.logout,
+            data: {'refreshToken': refreshToken},
+          );
+        } catch (_) {
+          // Server logout failed, still clear local data
+        }
+      }
+
       // Clear all stored data
       await _secureStorage.delete(key: 'access_token');
       await _secureStorage.delete(key: 'refresh_token');
@@ -143,6 +157,74 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  /// ========== FORGOT PASSWORD ==========
+  @override
+  Future<void> forgotPassword(String email) async {
+    try {
+      await _apiClient.post(
+        ApiEndpoints.forgotPassword,
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// ========== RESET PASSWORD ==========
+  @override
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      await _apiClient.post(
+        ApiEndpoints.resetPassword,
+        data: {'token': token, 'newPassword': newPassword},
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// ========== REFRESH TOKEN ==========
+  @override
+  Future<AuthResponseModel> refreshToken() async {
+    try {
+      final currentRefreshToken = await _secureStorage.read(
+        key: 'refresh_token',
+      );
+      if (currentRefreshToken == null) {
+        throw Exception('No refresh token found');
+      }
+
+      final response = await _apiClient.post(
+        ApiEndpoints.refreshToken,
+        data: {'refreshToken': currentRefreshToken},
+      );
+
+      final authResponse = AuthResponseModel.fromJson(response.data);
+
+      if (authResponse.token != null) {
+        await _saveTokens(authResponse.token!, authResponse.refreshToken);
+      }
+
+      return authResponse;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// ========== GET CURRENT USER ==========
+  @override
+  Future<AuthResponseModel> getCurrentUser() async {
+    try {
+      final response = await _apiClient.get(ApiEndpoints.me);
+      return AuthResponseModel.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
     }
   }
 
@@ -203,6 +285,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         }
 
       case DioExceptionType.connectionError:
+        if (kIsWeb) {
+          return Exception(
+            'Cannot reach the server. This may be a CORS issue. '
+            'Ensure the backend allows cross-origin requests, '
+            'or run with: flutter run -d chrome --web-browser-flag="--disable-web-security"',
+          );
+        }
         return Exception('No internet connection');
 
       case DioExceptionType.cancel:

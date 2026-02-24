@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/repositories/profile_repository.dart';
 import '../../domain/usecases/get_cached_profile_usecase.dart';
 import '../../domain/usecases/get_profile_usecase.dart';
 import '../../domain/usecases/update_profile_usecase.dart';
@@ -10,11 +11,13 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
   final GetProfileUseCase getProfileUseCase; // Remote
   final GetCachedProfileUseCase getCachedProfileUseCase; // Local
   final UpdateProfileUseCase updateProfileUseCase;
+  final IProfileRepository profileRepository;
 
   ProfileNotifier({
     required this.getProfileUseCase,
     required this.getCachedProfileUseCase,
     required this.updateProfileUseCase,
+    required this.profileRepository,
   }) : super(ProfileState.initial());
 
   Future<void> getProfile() async {
@@ -67,6 +70,36 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     result.fold(
       (failure) => state = state.copyWith(isLoading: false, error: failure.message),
       (profile) => state = state.copyWith(isLoading: false, profile: profile),
+    );
+  }
+
+  Future<bool> updateTheme(String theme) async {
+    state = state.copyWith(isLoading: true, error: null);
+    final result = await profileRepository.updateTheme(theme);
+    return result.fold(
+      (failure) {
+        state = state.copyWith(isLoading: false, error: failure.message);
+        return false;
+      },
+      (profile) {
+        state = state.copyWith(isLoading: false, profile: profile);
+        return true;
+      },
+    );
+  }
+
+  Future<bool> deleteProfileImage() async {
+    state = state.copyWith(isLoading: true, error: null);
+    final result = await profileRepository.deleteProfileImage();
+    return result.fold(
+      (failure) {
+        state = state.copyWith(isLoading: false, error: failure.message);
+        return false;
+      },
+      (profile) {
+        state = state.copyWith(isLoading: false, profile: profile);
+        return true;
+      },
     );
   }
 }

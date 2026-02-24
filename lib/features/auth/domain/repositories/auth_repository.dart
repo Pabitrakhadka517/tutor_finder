@@ -38,4 +38,13 @@ abstract class AuthRepository {
 
   /// Check authentication status
   Future<bool> isAuthenticated();
+
+  /// Request password reset email
+  Future<Either<Failure, void>> forgotPassword(String email);
+
+  /// Reset password with token
+  Future<Either<Failure, void>> resetPassword({
+    required String token,
+    required String newPassword,
+  });
 }

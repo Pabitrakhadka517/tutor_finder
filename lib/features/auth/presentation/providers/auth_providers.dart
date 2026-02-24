@@ -73,5 +73,6 @@ final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((
     logoutUseCase: ref.read(logoutUseCaseProvider),
     getCurrentUserUseCase: ref.read(getCurrentUserUseCaseProvider),
     checkAuthStatusUseCase: ref.read(checkAuthStatusUseCaseProvider),
+    authRepository: ref.read(authRepositoryProvider),
   );
 });

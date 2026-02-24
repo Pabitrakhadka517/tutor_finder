@@ -15,4 +15,7 @@ abstract class IProfileRepository {
     required String address,
     File? image, 
   });
+
+  Future<Either<Failure, ProfileEntity>> updateTheme(String theme);
+  Future<Either<Failure, ProfileEntity>> deleteProfileImage();
 }

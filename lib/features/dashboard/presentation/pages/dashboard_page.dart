@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/services/socket/socket_service.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../booking/presentation/pages/booking_list_page.dart';
+import '../../../chat/presentation/pages/chat_list_page.dart';
+import '../../../notification/presentation/pages/notification_page.dart';
+import '../../../notification/presentation/providers/notification_providers.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
+import '../../../tutor/presentation/pages/tutor_list_page.dart';
+import '../providers/dashboard_providers.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -13,17 +20,84 @@ class DashboardPage extends ConsumerStatefulWidget {
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   int _selectedIndex = 0;
+  late final SocketService _socketService;
+
+  @override
+  void initState() {
+    super.initState();
+    _socketService = ref.read(socketServiceProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadDashboardData();
+      ref.read(notificationNotifierProvider.notifier).fetchUnreadCount();
+      _initSocketNotifications();
+    });
+  }
+
+  /// Connect socket and listen for real-time notifications globally
+  Future<void> _initSocketNotifications() async {
+    await _socketService.connect();
+    _socketService.onNewNotification((data) {
+      if (!mounted) return;
+      if (data is Map<String, dynamic>) {
+        ref
+            .read(notificationNotifierProvider.notifier)
+            .addIncomingNotification(data);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _socketService.off('new_notification');
+    super.dispose();
+  }
+
+  void _loadDashboardData() {
+    final authState = ref.read(authNotifierProvider);
+    final role = authState.user?.role.name ?? 'student';
+    final userId = authState.user?.id ?? '';
+    final notifier = ref.read(dashboardNotifierProvider.notifier);
+
+    if (role == 'tutor') {
+      notifier.fetchTutorDashboard(userId);
+    } else if (role == 'admin') {
+      notifier.fetchAdminDashboard();
+    } else {
+      notifier.fetchStudentDashboard(userId);
+    }
+  }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    if (index == _selectedIndex) return;
+    switch (index) {
+      case 0:
+        setState(() => _selectedIndex = 0);
+        break;
+      case 1:
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const TutorListPage()));
+        break;
+      case 2:
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const BookingListPage()));
+        break;
+      case 3:
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ProfilePage()));
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final user = authState.user;
+    final dashboardState = ref.watch(dashboardNotifierProvider);
+    final notificationState = ref.watch(notificationNotifierProvider);
+    final unreadCount = notificationState.unreadCount;
 
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
@@ -39,17 +113,46 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         elevation: 0,
         backgroundColor: Colors.blue.shade50,
         actions: [
-          // Notification Icon
-          IconButton(
-            icon: Icon(
-              Icons.notifications_rounded,
-              color: Colors.blue.shade700,
-            ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No new notifications')),
-              );
-            },
+          // Notification Icon with badge
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.notifications_rounded,
+                  color: Colors.blue.shade700,
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NotificationPage()),
+                  );
+                },
+              ),
+              if (unreadCount > 0)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Text(
+                      unreadCount > 99 ? '99+' : '$unreadCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
           ),
           // Profile Icon
           IconButton(
@@ -65,33 +168,50 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ],
       ),
       drawer: _buildDrawer(context, user?.name ?? 'User', user?.email ?? ''),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // User Welcome Section
-            _buildWelcomeSection(user?.name ?? 'User'),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          _loadDashboardData();
+          ref.read(notificationNotifierProvider.notifier).fetchUnreadCount();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // User Welcome Section
+              _buildWelcomeSection(user?.name ?? 'User'),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // User Info Card
-            if (user != null) _buildUserInfoCard(user.name, user.email),
+              // User Info Card
+              if (user != null) _buildUserInfoCard(user.name, user.email),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // Quick Actions Grid
-            _buildQuickActionsSection(context),
+              // Quick Actions Grid
+              _buildQuickActionsSection(context),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // Stats Section
-            _buildStatsSection(),
+              // Stats Section
+              if (dashboardState.isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (dashboardState.errorMessage != null)
+                _buildStatsErrorSection(dashboardState.errorMessage!)
+              else
+                _buildStatsSection(),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // Recent Activity Section
-            _buildRecentActivitySection(),
-          ],
+              // Recent Activity Section
+              _buildRecentActivitySection(),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
@@ -154,30 +274,43 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
             ),
           ),
-          _drawerItem(Icons.home_rounded, 'Home', 0),
-          _drawerItem(Icons.search_rounded, 'Find Tutors', 1),
-          _drawerItem(Icons.calendar_today_rounded, 'Schedule', 2),
-          _drawerItem(Icons.book_rounded, 'My Courses', 3),
-          _drawerItem(Icons.chat_rounded, 'Messages', 4),
+          _drawerItem(Icons.home_rounded, 'Home', () {
+            Navigator.pop(context);
+            setState(() => _selectedIndex = 0);
+          }),
+          _drawerItem(Icons.search_rounded, 'Find Tutors', () {
+            Navigator.pop(context);
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const TutorListPage()));
+          }),
+          _drawerItem(Icons.calendar_today_rounded, 'My Bookings', () {
+            Navigator.pop(context);
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const BookingListPage()));
+          }),
+          _drawerItem(Icons.chat_rounded, 'Messages', () {
+            Navigator.pop(context);
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ChatListPage()));
+          }),
+          _drawerItem(Icons.notifications_rounded, 'Notifications', () {
+            Navigator.pop(context);
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const NotificationPage()));
+          }),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.settings_rounded),
-            title: const Text('Settings'),
+            leading: const Icon(Icons.person_rounded),
+            title: const Text('Profile'),
             onTap: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings - Coming Soon!')),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.help_rounded),
-            title: const Text('Help & Support'),
-            onTap: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Help - Coming Soon!')),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const ProfilePage()));
             },
           ),
           const Divider(),
@@ -194,26 +327,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     );
   }
 
-  Widget _drawerItem(IconData icon, String title, int index) {
-    final isSelected = _selectedIndex == index;
+  Widget _drawerItem(IconData icon, String title, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(
-        icon,
-        color: isSelected ? Colors.blue.shade700 : Colors.grey.shade700,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isSelected ? Colors.blue.shade700 : Colors.grey.shade700,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-      selected: isSelected,
-      selectedTileColor: Colors.blue.shade50,
-      onTap: () {
-        _onItemTapped(index);
-        Navigator.pop(context);
-      },
+      leading: Icon(icon, color: Colors.grey.shade700),
+      title: Text(title, style: TextStyle(color: Colors.grey.shade700)),
+      onTap: onTap,
     );
   }
 
@@ -267,9 +385,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Find Tutors - Coming Soon!')),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const TutorListPage()));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
@@ -396,38 +514,38 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 title: 'Find Tutors',
                 color: Colors.orange,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Find Tutors - Coming Soon!')),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const TutorListPage()),
                   );
                 },
               ),
               _buildActionCard(
                 icon: Icons.calendar_today_rounded,
-                title: 'My Schedule',
+                title: 'My Bookings',
                 color: Colors.green,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Schedule - Coming Soon!')),
-                  );
-                },
-              ),
-              _buildActionCard(
-                icon: Icons.book_rounded,
-                title: 'My Courses',
-                color: Colors.purple,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Courses - Coming Soon!')),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const BookingListPage()),
                   );
                 },
               ),
               _buildActionCard(
                 icon: Icons.chat_rounded,
                 title: 'Messages',
+                color: Colors.purple,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ChatListPage()),
+                  );
+                },
+              ),
+              _buildActionCard(
+                icon: Icons.notifications_rounded,
+                title: 'Notifications',
                 color: Colors.blue,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Messages - Coming Soon!')),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NotificationPage()),
                   );
                 },
               ),
@@ -486,7 +604,134 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     );
   }
 
+  Widget _buildStatsErrorSection(String error) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red.shade400),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                error,
+                style: TextStyle(color: Colors.red.shade700, fontSize: 14),
+              ),
+            ),
+            TextButton(
+              onPressed: _loadDashboardData,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildStatsSection() {
+    final dashboardState = ref.watch(dashboardNotifierProvider);
+    final authState = ref.watch(authNotifierProvider);
+    final role = authState.user?.role.name ?? 'student';
+
+    List<_StatItem> stats;
+
+    if (role == 'tutor' && dashboardState.tutorStats != null) {
+      final s = dashboardState.tutorStats!;
+      stats = [
+        _StatItem(
+          Icons.school_rounded,
+          'Sessions',
+          '${s.completedBookings}',
+          Colors.blue,
+        ),
+        _StatItem(
+          Icons.star_rounded,
+          'Rating',
+          s.averageRating > 0 ? s.averageRating.toStringAsFixed(1) : 'N/A',
+          Colors.amber,
+        ),
+        _StatItem(
+          Icons.people_rounded,
+          'Students',
+          '${s.totalStudentsWorkedWith}',
+          Colors.green,
+        ),
+        _StatItem(
+          Icons.attach_money_rounded,
+          'Earned',
+          '\$${s.totalEarnings.toStringAsFixed(0)}',
+          Colors.teal,
+        ),
+      ];
+    } else if (role == 'admin' && dashboardState.adminStats != null) {
+      final s = dashboardState.adminStats!;
+      stats = [
+        _StatItem(
+          Icons.people_rounded,
+          'Users',
+          '${s.totalUsers}',
+          Colors.blue,
+        ),
+        _StatItem(
+          Icons.school_rounded,
+          'Tutors',
+          '${s.totalTutors}',
+          Colors.green,
+        ),
+        _StatItem(
+          Icons.book_rounded,
+          'Bookings',
+          '${s.totalBookings}',
+          Colors.purple,
+        ),
+        _StatItem(
+          Icons.attach_money_rounded,
+          'Revenue',
+          '\$${s.totalRevenue.toStringAsFixed(0)}',
+          Colors.teal,
+        ),
+      ];
+    } else if (dashboardState.studentStats != null) {
+      final s = dashboardState.studentStats!;
+      stats = [
+        _StatItem(
+          Icons.school_rounded,
+          'Sessions',
+          '${s.totalBookings}',
+          Colors.blue,
+        ),
+        _StatItem(
+          Icons.upcoming_rounded,
+          'Upcoming',
+          '${s.upcomingBookings}',
+          Colors.orange,
+        ),
+        _StatItem(
+          Icons.check_circle_rounded,
+          'Completed',
+          '${s.completedBookings}',
+          Colors.green,
+        ),
+        _StatItem(
+          Icons.attach_money_rounded,
+          'Spent',
+          '\$${s.totalSpent.toStringAsFixed(0)}',
+          Colors.teal,
+        ),
+      ];
+    } else {
+      stats = [
+        _StatItem(Icons.school_rounded, 'Sessions', '0', Colors.blue),
+        _StatItem(Icons.star_rounded, 'Rating', 'N/A', Colors.amber),
+        _StatItem(Icons.timer_rounded, 'Hours', '0', Colors.green),
+      ];
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -501,35 +746,25 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.school_rounded,
-                  title: 'Sessions',
-                  value: '0',
-                  color: Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.star_rounded,
-                  title: 'Rating',
-                  value: 'N/A',
-                  color: Colors.amber,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.timer_rounded,
-                  title: 'Hours',
-                  value: '0',
-                  color: Colors.green,
-                ),
-              ),
-            ],
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: stats.length >= 4 ? 4 : 3,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.85,
+            ),
+            itemCount: stats.length,
+            itemBuilder: (context, index) {
+              final stat = stats[index];
+              return _buildStatCard(
+                icon: stat.icon,
+                title: stat.title,
+                value: stat.value,
+                color: stat.color,
+              );
+            },
           ),
         ],
       ),
@@ -555,23 +790,27 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue.shade900,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade900,
+              ),
             ),
-          ),
-          Text(
-            title,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-        ],
+            Text(
+              title,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -661,16 +900,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         unselectedItemColor: Colors.grey.shade400,
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
         currentIndex: _selectedIndex,
-        onTap: (index) {
-          if (index == 3) {
-            // Profile tab
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const ProfilePage()),
-            );
-          } else {
-            _onItemTapped(index);
-          }
-        },
+        onTap: _onItemTapped,
         elevation: 0,
         items: const [
           BottomNavigationBarItem(
@@ -679,11 +909,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.search_rounded),
-            label: 'Search',
+            label: 'Tutors',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today_rounded),
-            label: 'Schedule',
+            label: 'Bookings',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_rounded),
@@ -860,4 +1090,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       },
     );
   }
+}
+
+class _StatItem {
+  final IconData icon;
+  final String title;
+  final String value;
+  final Color color;
+
+  _StatItem(this.icon, this.title, this.value, this.color);
 }

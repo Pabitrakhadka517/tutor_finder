@@ -263,4 +263,34 @@ class AuthRepositoryImpl implements AuthRepository {
   bool _verifyPassword(String password, String hashedPassword) {
     return password.hashCode.toString() == hashedPassword;
   }
+
+  @override
+  Future<Either<Failure, void>> forgotPassword(String email) async {
+    try {
+      await remoteDataSource.forgotPassword(email);
+      return Either.right(null);
+    } catch (e) {
+      return Either.left(
+        AuthFailure(e.toString().replaceAll('Exception: ', '')),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      await remoteDataSource.resetPassword(
+        token: token,
+        newPassword: newPassword,
+      );
+      return Either.right(null);
+    } catch (e) {
+      return Either.left(
+        AuthFailure(e.toString().replaceAll('Exception: ', '')),
+      );
+    }
+  }
 }

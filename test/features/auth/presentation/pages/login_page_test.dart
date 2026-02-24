@@ -44,14 +44,7 @@ void main() {
     ) async {
       await tester.pumpWidget(createWidgetUnderTest());
 
-      final emailField = find
-          .ancestor(
-            of: find.text('Email'),
-            matching: find.byType(TextFormField),
-          )
-          .first;
-
-      // Or simply find by type since order is known
+      // Find by type since order is known
       await tester.enterText(
         find.byType(TextFormField).at(0),
         'user@example.com',

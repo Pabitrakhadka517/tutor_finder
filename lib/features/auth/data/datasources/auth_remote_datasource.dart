@@ -27,6 +27,21 @@ abstract class AuthRemoteDataSource {
     required String password,
   });
 
-  /// Logout user via API
+  /// Logout user via API (invalidates server tokens + clears local)
   Future<bool> logout();
+
+  /// Request password reset email
+  Future<void> forgotPassword(String email);
+
+  /// Reset password using token
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  });
+
+  /// Refresh access token
+  Future<AuthResponseModel> refreshToken();
+
+  /// Get current authenticated user
+  Future<AuthResponseModel> getCurrentUser();
 }

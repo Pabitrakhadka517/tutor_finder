@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/usecases/usecase.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/check_auth_status_usecase.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/login_usecase.dart';
@@ -18,6 +19,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final LogoutUseCase logoutUseCase;
   final GetCurrentUserUseCase getCurrentUserUseCase;
   final CheckAuthStatusUseCase checkAuthStatusUseCase;
+  final AuthRepository authRepository;
 
   AuthNotifier({
     required this.registerUseCase,
@@ -27,6 +29,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required this.logoutUseCase,
     required this.getCurrentUserUseCase,
     required this.checkAuthStatusUseCase,
+    required this.authRepository,
   }) : super(const AuthState.initial());
 
   /// Check authentication status on app start
@@ -132,5 +135,43 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (state.status == AuthStatus.error) {
       state = const AuthState.unauthenticated();
     }
+  }
+
+  /// Request password reset email
+  Future<bool> forgotPassword(String email) async {
+    state = const AuthState.loading();
+    final result = await authRepository.forgotPassword(email);
+    return result.fold(
+      (failure) {
+        state = AuthState.error(failure.message);
+        return false;
+      },
+      (_) {
+        state = const AuthState.unauthenticated();
+        return true;
+      },
+    );
+  }
+
+  /// Reset password with token
+  Future<bool> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    state = const AuthState.loading();
+    final result = await authRepository.resetPassword(
+      token: token,
+      newPassword: newPassword,
+    );
+    return result.fold(
+      (failure) {
+        state = AuthState.error(failure.message);
+        return false;
+      },
+      (_) {
+        state = const AuthState.unauthenticated();
+        return true;
+      },
+    );
   }
 }
