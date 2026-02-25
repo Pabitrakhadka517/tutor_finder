@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../app/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/presentation/pages/booking_list_page.dart';
 import '../../../chat/presentation/pages/chat_list_page.dart';
@@ -11,12 +12,11 @@ import '../../../study/presentation/pages/my_resources_page.dart';
 import '../../../transaction/presentation/pages/transaction_history_page.dart';
 import 'wallet_page.dart';
 import '../../../tutor/presentation/pages/availability_management_page.dart';
-import '../../../tutor/presentation/pages/verification_submission_page.dart';
 import 'tutor_students_page.dart';
 import '../providers/dashboard_providers.dart';
 
-/// Tutor-specific dashboard page
-/// Displays earnings, verification status, sessions, students, and quick actions
+/// Tutor-specific dashboard page — styled to match the Student Dashboard's
+/// unified blue design system via [AppColors].
 class TutorDashboardPage extends ConsumerStatefulWidget {
   const TutorDashboardPage({super.key});
 
@@ -47,23 +47,22 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
     final stats = dashboardState.tutorStats;
 
     return RefreshIndicator(
+      color: AppColors.primaryLight,
       onRefresh: () async => _loadData(),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Hero Section
             _buildWelcomeHero(user?.name ?? 'Tutor', stats),
-
             const SizedBox(height: 20),
-
-            // Stats Cards
             if (dashboardState.isLoading)
               const Center(
                 child: Padding(
                   padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(
+                    color: AppColors.primaryLight,
+                  ),
                 ),
               )
             else if (dashboardState.errorMessage != null)
@@ -86,25 +85,47 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // WELCOME HERO — unified blue gradient matching student dashboard
+  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildWelcomeHero(String name, dynamic stats) {
-    final verificationStatus =
-        stats?.verificationStatus?.toString().split('.').last ?? 'pending';
-    final isVerified = verificationStatus.toLowerCase() == 'verified';
+    final pendingCount = stats?.pendingBookings ?? 0;
+    final completedCount = stats?.completedBookings ?? 0;
+    final avgRating = stats?.averageRating ?? 0.0;
+
+    final now = DateTime.now();
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final dateLabel =
+        '${days[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}';
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.xxl),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.green.shade700, Colors.teal.shade500],
+        gradient: const LinearGradient(
+          colors: AppColors.heroGradient,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withValues(alpha: 0.3),
+            color: AppColors.primaryLight.withValues(alpha: 0.30),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -113,6 +134,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Top row: name + icon ────────────────────────────────────────
           Row(
             children: [
               Expanded(
@@ -120,13 +142,22 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome back,',
+                      dateLabel,
                       style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.8),
+                        letterSpacing: 0.4,
                       ),
                     ),
                     const SizedBox(height: 4),
+                    Text(
+                      'Welcome back,',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
                     Text(
                       name,
                       style: const TextStyle(
@@ -135,51 +166,14 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    // Verification Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isVerified
-                            ? Colors.white.withValues(alpha: 0.25)
-                            : Colors.orange.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isVerified
-                                ? Icons.verified_rounded
-                                : Icons.pending_rounded,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isVerified
-                                ? 'Verified Tutor'
-                                : 'Pending Verification',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: const Icon(
                   Icons.workspace_premium_rounded,
@@ -189,40 +183,50 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Verification warning
-          if (!isVerified)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade800.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.info_outline_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Complete your profile and submit for verification to start receiving bookings.',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+
+          const SizedBox(height: 20),
+
+          // ── At-a-glance stat chips ───────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
             ),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _HeroStat(
+                  icon: Icons.pending_actions_rounded,
+                  value: '$pendingCount',
+                  label: 'Pending',
+                ),
+                _HeroDivider(),
+                _HeroStat(
+                  icon: Icons.check_circle_outline_rounded,
+                  value: '$completedCount',
+                  label: 'Completed',
+                ),
+                _HeroDivider(),
+                _HeroStat(
+                  icon: Icons.star_rounded,
+                  value: avgRating > 0 ? avgRating.toStringAsFixed(1) : '—',
+                  label: 'Avg Rating',
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // STATS GRID
+  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildStatsGrid(dynamic stats) {
     final totalStudents = stats?.totalStudentsWorkedWith ?? 0;
     final pendingBookings = stats?.pendingBookings ?? 0;
@@ -230,19 +234,19 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
     final averageRating = stats?.averageRating ?? 0.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Performance Overview',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade900,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(
@@ -250,21 +254,21 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                   icon: Icons.people_rounded,
                   label: 'Total Students',
                   value: '$totalStudents',
-                  color: Colors.blue,
+                  color: AppColors.accentBlue,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _StatCard(
                   icon: Icons.pending_actions_rounded,
                   label: 'Pending',
                   value: '$pendingBookings',
-                  color: Colors.orange,
+                  color: AppColors.accentOrange,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(
@@ -272,10 +276,10 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                   icon: Icons.check_circle_rounded,
                   label: 'Completed',
                   value: '$completedBookings',
-                  color: Colors.green,
+                  color: AppColors.accentGreen,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _StatCard(
                   icon: Icons.star_rounded,
@@ -283,7 +287,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                   value: averageRating > 0
                       ? averageRating.toStringAsFixed(1)
                       : 'N/A',
-                  color: Colors.amber.shade700,
+                  color: AppColors.accentAmber,
                 ),
               ),
             ],
@@ -293,23 +297,28 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // EARNINGS CARD
+  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildEarningsCard(dynamic stats) {
     final totalEarnings = stats?.totalEarnings ?? 0.0;
     final thisMonthEarnings = stats?.thisMonthEarnings ?? 0.0;
     final pendingEarnings = stats?.pendingEarnings ?? 0.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.indigo.shade600, Colors.blue.shade700],
+          gradient: const LinearGradient(
+            colors: AppColors.primaryGradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           boxShadow: [
             BoxShadow(
-              color: Colors.indigo.withValues(alpha: 0.3),
+              color: AppColors.primaryLight.withValues(alpha: 0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -345,7 +354,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               'Rs. ${totalEarnings.toStringAsFixed(0)}',
               style: const TextStyle(
@@ -362,7 +371,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                 fontSize: 14,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Row(
               children: [
                 Expanded(
@@ -385,33 +394,36 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // QUICK ACTIONS
+  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildQuickActions() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Quick Actions',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade900,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           GridView.count(
             crossAxisCount: 3,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            crossAxisSpacing: AppSpacing.md,
+            mainAxisSpacing: AppSpacing.md,
             childAspectRatio: 1.0,
             children: [
               _ActionTile(
                 icon: Icons.calendar_today_rounded,
                 label: 'Sessions',
-                color: Colors.blue,
+                color: AppColors.accentBlue,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const BookingListPage()),
                 ),
@@ -419,7 +431,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
               _ActionTile(
                 icon: Icons.menu_book_rounded,
                 label: 'My Resources',
-                color: Colors.purple,
+                color: AppColors.accentPurple,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const MyResourcesPage()),
                 ),
@@ -427,7 +439,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
               _ActionTile(
                 icon: Icons.chat_rounded,
                 label: 'Messages',
-                color: Colors.teal,
+                color: AppColors.accentTeal,
                 onTap: () => Navigator.of(
                   context,
                 ).push(MaterialPageRoute(builder: (_) => const ChatListPage())),
@@ -435,7 +447,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
               _ActionTile(
                 icon: Icons.star_rounded,
                 label: 'Reviews',
-                color: Colors.amber.shade700,
+                color: AppColors.accentAmber,
                 onTap: () {
                   final userId = ref.read(authNotifierProvider).user?.id ?? '';
                   Navigator.of(context).push(
@@ -448,7 +460,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
               _ActionTile(
                 icon: Icons.notifications_rounded,
                 label: 'Alerts',
-                color: Colors.red,
+                color: AppColors.accentRed,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const NotificationPage()),
                 ),
@@ -456,7 +468,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
               _ActionTile(
                 icon: Icons.library_books_rounded,
                 label: 'Study Hub',
-                color: Colors.green,
+                color: AppColors.accentGreen,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const StudyResourcesPage()),
                 ),
@@ -464,7 +476,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
               _ActionTile(
                 icon: Icons.schedule_rounded,
                 label: 'Availability',
-                color: Colors.indigo,
+                color: AppColors.accentIndigo,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const AvailabilityManagementPage(),
@@ -472,19 +484,9 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                 ),
               ),
               _ActionTile(
-                icon: Icons.verified_rounded,
-                label: 'Verification',
-                color: Colors.cyan,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const VerificationSubmissionPage(),
-                  ),
-                ),
-              ),
-              _ActionTile(
                 icon: Icons.account_balance_wallet_rounded,
                 label: 'Earnings',
-                color: Colors.orange,
+                color: AppColors.accentOrange,
                 onTap: () => Navigator.of(
                   context,
                 ).push(MaterialPageRoute(builder: (_) => const WalletPage())),
@@ -492,7 +494,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
               _ActionTile(
                 icon: Icons.people_rounded,
                 label: 'Students',
-                color: Colors.deepPurple,
+                color: AppColors.accentDeepPurple,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const TutorStudentsPage()),
                 ),
@@ -504,6 +506,9 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // PENDING REQUESTS
+  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildPendingRequests(dynamic stats) {
     final recentBookings = stats?.recentBookings ?? [];
     final pendingBookings = recentBookings
@@ -511,19 +516,19 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
         .toList();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Incoming Requests',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade900,
+                  color: AppColors.textPrimary,
                 ),
               ),
               TextButton(
@@ -534,7 +539,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           if (pendingBookings.isEmpty)
             _buildEmptyState(
               icon: Icons.inbox_rounded,
@@ -547,17 +552,14 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                 .map<Widget>(
                   (booking) => Container(
                     margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.orange.shade100,
-                        width: 1,
-                      ),
+                      color: AppColors.cardBackground,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      border: Border.all(color: AppColors.border),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
+                          color: AppColors.shadowNeutral,
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -568,15 +570,15 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
-                            borderRadius: BorderRadius.circular(12),
+                            color: AppColors.primarySurface,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
-                          child: Icon(
+                          child: const Icon(
                             Icons.person_rounded,
-                            color: Colors.orange.shade700,
+                            color: AppColors.primaryLight,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,13 +588,14 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                               Text(
                                 _formatDate(booking.scheduledDate),
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey.shade600,
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                             ],
@@ -600,9 +603,9 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                         ),
                         Text(
                           'Rs. ${booking.amount.toStringAsFixed(0)}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
+                            color: AppColors.accentGreen,
                           ),
                         ),
                       ],
@@ -614,23 +617,26 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // RECENT ACTIVITY
+  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildRecentActivity(dynamic stats) {
     final recentTransactions = stats?.recentTransactions ?? [];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Recent Earnings',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade900,
+                  color: AppColors.textPrimary,
                 ),
               ),
               TextButton(
@@ -643,7 +649,7 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           if (recentTransactions.isEmpty)
             _buildEmptyState(
               icon: Icons.receipt_long_rounded,
@@ -658,11 +664,12 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.cardBackground,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: AppColors.border),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
+                          color: AppColors.shadowNeutral,
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -670,22 +677,25 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                     ),
                     child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.arrow_downward_rounded,
-                          color: Colors.green.shade600,
+                          color: AppColors.accentGreen,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
                             tx.description,
-                            style: const TextStyle(fontSize: 14),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                         ),
                         Text(
                           'Rs. ${tx.amount.toStringAsFixed(0)}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
+                            color: AppColors.accentGreen,
                           ),
                         ),
                       ],
@@ -697,23 +707,27 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildErrorCard(String error) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         decoration: BoxDecoration(
-          color: Colors.red.shade50,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.errorLight,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
         ),
         child: Row(
           children: [
-            Icon(Icons.error_outline_rounded, color: Colors.red.shade400),
-            const SizedBox(width: 12),
+            const Icon(Icons.error_outline_rounded, color: AppColors.error),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
                 error,
-                style: TextStyle(color: Colors.red.shade700, fontSize: 14),
+                style: const TextStyle(color: AppColors.error, fontSize: 14),
               ),
             ),
             TextButton(onPressed: _loadData, child: const Text('Retry')),
@@ -729,13 +743,14 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
     required String subtitle,
   }) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xxl),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadowNeutral,
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -743,19 +758,20 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
       ),
       child: Column(
         children: [
-          Icon(icon, size: 40, color: Colors.green.shade200),
-          const SizedBox(height: 12),
+          Icon(icon, size: 40, color: AppColors.primaryMid),
+          const SizedBox(height: AppSpacing.md),
           Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade900,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -777,9 +793,14 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
       'Nov',
       'Dec',
     ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    return '${months[date.month - 1]} ${date.day}, ${date.year} '
+        'at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REUSABLE WIDGETS
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _StatCard extends StatelessWidget {
   final IconData icon;
@@ -797,13 +818,14 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.1),
+            color: color.withValues(alpha: 0.10),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -813,61 +835,32 @@ class _StatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Icon(icon, color: color, size: 22),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade900,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _EarningsMini extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _EarningsMini({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
-            fontSize: 12,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -891,11 +884,12 @@ class _ActionTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.1),
+              color: color.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -905,26 +899,111 @@ class _ActionTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: 26),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade800,
+                color: color,
               ),
               textAlign: TextAlign.center,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _EarningsMini extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _EarningsMini({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.white.withValues(alpha: 0.75),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroStat extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+
+  const _HeroStat({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 16),
+            const SizedBox(width: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 30,
+      color: Colors.white.withValues(alpha: 0.15),
     );
   }
 }

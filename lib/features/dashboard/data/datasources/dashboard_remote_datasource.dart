@@ -21,11 +21,23 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       final response = await dio.get(ApiEndpoints.studentDashboard);
       if (response.statusCode == 200) {
         final data = response.data;
-        return StudentDashboardModel.fromJson(data is Map<String, dynamic> ? data : {});
+        if (data is Map<String, dynamic>) {
+          // Backend returns { success, stats, recentBookings, recentTransactions }
+          final stats = data['stats'] is Map<String, dynamic>
+              ? data['stats'] as Map<String, dynamic>
+              : data;
+          return StudentDashboardModel.fromJson(
+            stats,
+            recentBookings: data['recentBookings'] as List? ?? [],
+            recentTransactions: data['recentTransactions'] as List? ?? [],
+          );
+        }
+        return StudentDashboardModel.fromJson({});
       }
-      throw ServerException( 'Failed to fetch student dashboard');
+      throw ServerException('Failed to fetch student dashboard');
     } on DioException catch (e) {
-      throw ServerException( e.response?.data?['message'] ?? 'Failed to fetch student dashboard',
+      throw ServerException(
+        e.response?.data?['message'] ?? 'Failed to fetch student dashboard',
       );
     }
   }
@@ -36,11 +48,22 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       final response = await dio.get(ApiEndpoints.tutorDashboard);
       if (response.statusCode == 200) {
         final data = response.data;
-        return TutorDashboardModel.fromJson(data is Map<String, dynamic> ? data : {});
+        if (data is Map<String, dynamic>) {
+          final stats = data['stats'] is Map<String, dynamic>
+              ? data['stats'] as Map<String, dynamic>
+              : data;
+          return TutorDashboardModel.fromJson(
+            stats,
+            recentBookings: data['recentBookings'] as List? ?? [],
+            recentTransactions: data['recentTransactions'] as List? ?? [],
+          );
+        }
+        return TutorDashboardModel.fromJson({});
       }
-      throw ServerException( 'Failed to fetch tutor dashboard');
+      throw ServerException('Failed to fetch tutor dashboard');
     } on DioException catch (e) {
-      throw ServerException( e.response?.data?['message'] ?? 'Failed to fetch tutor dashboard',
+      throw ServerException(
+        e.response?.data?['message'] ?? 'Failed to fetch tutor dashboard',
       );
     }
   }
@@ -51,11 +74,18 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       final response = await dio.get(ApiEndpoints.adminDashboard);
       if (response.statusCode == 200) {
         final data = response.data;
-        return AdminDashboardModel.fromJson(data is Map<String, dynamic> ? data : {});
+        if (data is Map<String, dynamic>) {
+          final stats = data['stats'] is Map<String, dynamic>
+              ? data['stats'] as Map<String, dynamic>
+              : data;
+          return AdminDashboardModel.fromJson(stats);
+        }
+        return AdminDashboardModel.fromJson({});
       }
-      throw ServerException( 'Failed to fetch admin dashboard');
+      throw ServerException('Failed to fetch admin dashboard');
     } on DioException catch (e) {
-      throw ServerException( e.response?.data?['message'] ?? 'Failed to fetch admin dashboard',
+      throw ServerException(
+        e.response?.data?['message'] ?? 'Failed to fetch admin dashboard',
       );
     }
   }

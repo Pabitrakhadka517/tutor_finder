@@ -1,43 +1,35 @@
-import 'package:json_annotation/json_annotation.dart';
-
 import '../../domain/entities/notification_entity.dart';
 import '../../domain/entities/notification_page.dart';
 import '../../domain/value_objects/notification_type.dart';
 
-part 'notification_dto.g.dart';
-
 /// Data Transfer Object for Notification
 ///
-/// This DTO handles JSON serialization/deserialization for API communication
-/// and provides conversion methods between domain entities and data layer.
-/// It serves as the bridge between external data and internal domain models.
-@JsonSerializable(explicitToJson: true)
+/// Manually handles JSON serialization/deserialization to match the
+/// backend response format from web-backend-learnmentor exactly.
+///
+/// Backend notification object shape:
+/// ```json
+/// {
+///   "_id": "...",
+///   "recipient": "userId" | { "_id": "...", ... },
+///   "sender": { "fullName": "...", "profileImage": "..." },
+///   "type": "BOOKING_CREATED",
+///   "message": "Your booking has been confirmed",
+///   "relatedId": "...",
+///   "isRead": false,
+///   "createdAt": "2024-...",
+///   "updatedAt": "2024-..."
+/// }
+/// ```
 class NotificationDto {
-  @JsonKey(name: 'id')
   final String id;
-
-  @JsonKey(name: 'recipientId')
   final String recipientId;
-
-  @JsonKey(name: 'type')
   final String type;
-
-  @JsonKey(name: 'title')
   final String title;
-
-  @JsonKey(name: 'message')
   final String? message;
-
-  @JsonKey(name: 'payload')
   final Map<String, dynamic>? payload;
-
-  @JsonKey(name: 'read')
   final bool read;
-
-  @JsonKey(name: 'createdAt')
   final DateTime createdAt;
-
-  @JsonKey(name: 'updatedAt')
   final DateTime updatedAt;
 
   const NotificationDto({
@@ -51,6 +43,70 @@ class NotificationDto {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  /// Parse from backend JSON response.
+  ///
+  /// Backend fields -> Flutter DTO fields:
+  /// - `_id` / `id` -> [id]
+  /// - `recipient` (string or object with `_id`) -> [recipientId]
+  /// - `type` -> [type]
+  /// - `message` -> [title] AND [message] (backend has no separate title)
+  /// - `sender` (populated object) -> stored in [payload]
+  /// - `relatedId` -> stored in [payload]
+  /// - `isRead` / `read` -> [read]
+  /// - `createdAt` -> [createdAt]
+  /// - `updatedAt` -> [updatedAt]
+  factory NotificationDto.fromJson(Map<String, dynamic> json) {
+    // Extract ID: backend uses _id, sometimes id
+    final id = (json['_id'] ?? json['id'] ?? '').toString();
+
+    // Extract recipient: can be a string or populated object
+    String recipientId;
+    final recipient = json['recipient'];
+    if (recipient is Map) {
+      recipientId = (recipient['_id'] ?? recipient['id'] ?? '').toString();
+    } else {
+      recipientId = (recipient ?? '').toString();
+    }
+
+    // Type
+    final type = (json['type'] ?? 'SYSTEM_ALERT').toString();
+
+    // Message: backend only has `message`, no separate `title`
+    final message = json['message']?.toString() ?? 'Notification';
+
+    // Read status: backend uses `isRead`, fallback to `read`
+    final isRead = json['isRead'] as bool? ?? json['read'] as bool? ?? false;
+
+    // Build payload from sender and relatedId
+    final payloadMap = <String, dynamic>{};
+    if (json['sender'] != null) {
+      payloadMap['sender'] = json['sender'];
+    }
+    if (json['relatedId'] != null) {
+      payloadMap['relatedId'] = json['relatedId'].toString();
+    }
+    // Include any 'data' field if present (from socket events)
+    if (json['data'] is Map) {
+      payloadMap['data'] = json['data'];
+    }
+
+    // Timestamps
+    final createdAt = _parseDate(json['createdAt']);
+    final updatedAt = _parseDate(json['updatedAt']) ?? createdAt;
+
+    return NotificationDto(
+      id: id,
+      recipientId: recipientId,
+      type: type,
+      title: message, // Backend message serves as the title
+      message: message,
+      payload: payloadMap.isNotEmpty ? payloadMap : null,
+      read: isRead,
+      createdAt: createdAt ?? DateTime.now(),
+      updatedAt: updatedAt ?? DateTime.now(),
+    );
+  }
 
   /// Create DTO from domain entity
   factory NotificationDto.fromEntity(NotificationEntity entity) {
@@ -67,19 +123,31 @@ class NotificationDto {
     );
   }
 
-  /// Create DTO from JSON
-  factory NotificationDto.fromJson(Map<String, dynamic> json) =>
-      _$NotificationDtoFromJson(json);
-
-  /// Convert DTO to JSON
-  Map<String, dynamic> toJson() => _$NotificationDtoToJson(this);
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'recipientId': recipientId,
+    'type': type,
+    'title': title,
+    'message': message,
+    'payload': payload,
+    'read': read,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   /// Convert DTO to domain entity
   NotificationEntity toEntity() {
+    NotificationType notifType;
+    try {
+      notifType = NotificationType.fromString(type);
+    } catch (_) {
+      notifType = NotificationType.systemAlert;
+    }
+
     return NotificationEntity.fromRepository(
       id: id,
       recipientId: recipientId,
-      type: NotificationType.fromString(type),
+      type: notifType,
       title: title,
       message: message,
       payload: payload,
@@ -89,29 +157,6 @@ class NotificationDto {
     );
   }
 
-  /// Create DTO for API request (without server-generated fields)
-  factory NotificationDto.forCreation({
-    required String recipientId,
-    required String type,
-    required String title,
-    String? message,
-    Map<String, dynamic>? payload,
-  }) {
-    final now = DateTime.now();
-    return NotificationDto(
-      id: '', // Will be set by server
-      recipientId: recipientId,
-      type: type,
-      title: title,
-      message: message,
-      payload: payload,
-      read: false,
-      createdAt: now,
-      updatedAt: now,
-    );
-  }
-
-  /// Create a copy with updated fields
   NotificationDto copyWith({
     String? id,
     String? recipientId,
@@ -136,84 +181,49 @@ class NotificationDto {
     );
   }
 
-  /// Helper for marking as read
   NotificationDto markAsRead() {
     return copyWith(read: true, updatedAt: DateTime.now());
   }
 
-  @override
-  String toString() {
-    return 'NotificationDto('
-        'id: $id, '
-        'recipientId: $recipientId, '
-        'type: $type, '
-        'title: $title, '
-        'read: $read)';
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
+
+  @override
+  String toString() =>
+      'NotificationDto(id: $id, type: $type, title: $title, read: $read)';
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-
-    return other is NotificationDto &&
-        other.id == id &&
-        other.recipientId == recipientId &&
-        other.type == type &&
-        other.title == title &&
-        other.message == message &&
-        _mapEquals(other.payload, payload) &&
-        other.read == read &&
-        other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
+    return other is NotificationDto && other.id == id;
   }
 
   @override
-  int get hashCode {
-    return id.hashCode ^
-        recipientId.hashCode ^
-        type.hashCode ^
-        title.hashCode ^
-        message.hashCode ^
-        payload.hashCode ^
-        read.hashCode ^
-        createdAt.hashCode ^
-        updatedAt.hashCode;
-  }
-
-  bool _mapEquals(Map<String, dynamic>? map1, Map<String, dynamic>? map2) {
-    if (map1 == null && map2 == null) return true;
-    if (map1 == null || map2 == null) return false;
-    if (map1.length != map2.length) return false;
-    for (final key in map1.keys) {
-      if (map1[key] != map2[key]) return false;
-    }
-    return true;
-  }
+  int get hashCode => id.hashCode;
 }
 
-/// Paginated response DTO for notifications
-@JsonSerializable(explicitToJson: true)
+/// Paginated response DTO for notifications.
+///
+/// Backend returns:
+/// ```json
+/// {
+///   "notifications": [...],
+///   "total": 25,
+///   "page": 1,
+///   "unreadCount": 3
+/// }
+/// ```
 class NotificationPageDto {
-  @JsonKey(name: 'notifications')
   final List<NotificationDto> notifications;
-
-  @JsonKey(name: 'totalCount')
   final int totalCount;
-
-  @JsonKey(name: 'page')
   final int page;
-
-  @JsonKey(name: 'limit')
   final int limit;
-
-  @JsonKey(name: 'totalPages')
   final int totalPages;
-
-  @JsonKey(name: 'hasNext')
-  final bool hasNext;
-
-  @JsonKey(name: 'hasPrevious')
-  final bool hasPrevious;
+  final int unreadCount;
 
   const NotificationPageDto({
     required this.notifications,
@@ -221,25 +231,50 @@ class NotificationPageDto {
     required this.page,
     required this.limit,
     required this.totalPages,
-    required this.hasNext,
-    required this.hasPrevious,
+    required this.unreadCount,
   });
 
-  factory NotificationPageDto.fromJson(Map<String, dynamic> json) =>
-      _$NotificationPageDtoFromJson(json);
+  bool get hasNext => page < totalPages;
+  bool get hasPrevious => page > 1;
 
-  Map<String, dynamic> toJson() => _$NotificationPageDtoToJson(this);
+  factory NotificationPageDto.fromJson(
+    Map<String, dynamic> json, {
+    int requestedLimit = 20,
+  }) {
+    final notificationsList = <NotificationDto>[];
+    final rawNotifications = json['notifications'];
+    if (rawNotifications is List) {
+      for (final item in rawNotifications) {
+        if (item is Map<String, dynamic>) {
+          notificationsList.add(NotificationDto.fromJson(item));
+        }
+      }
+    }
 
-  @override
-  String toString() {
-    return 'NotificationPageDto('
-        'notifications: ${notifications.length}, '
-        'totalCount: $totalCount, '
-        'page: $page, '
-        'totalPages: $totalPages)';
+    final total = (json['total'] as num?)?.toInt() ?? notificationsList.length;
+    final page = (json['page'] as num?)?.toInt() ?? 1;
+    final limit = (json['limit'] as num?)?.toInt() ?? requestedLimit;
+    final unreadCount = (json['unreadCount'] as num?)?.toInt() ?? 0;
+    final totalPages = limit > 0 ? (total / limit).ceil() : 1;
+
+    return NotificationPageDto(
+      notifications: notificationsList,
+      totalCount: total,
+      page: page,
+      limit: limit,
+      totalPages: totalPages,
+      unreadCount: unreadCount,
+    );
   }
 
-  /// Convert DTO to domain entity
+  Map<String, dynamic> toJson() => {
+    'notifications': notifications.map((n) => n.toJson()).toList(),
+    'total': totalCount,
+    'page': page,
+    'limit': limit,
+    'unreadCount': unreadCount,
+  };
+
   NotificationPage toPage() {
     return NotificationPage(
       notifications: notifications.map((dto) => dto.toEntity()).toList(),
@@ -249,60 +284,9 @@ class NotificationPageDto {
       limit: limit,
     );
   }
-}
-
-/// Statistics DTO for notifications
-@JsonSerializable(explicitToJson: true)
-class NotificationStatsDto {
-  @JsonKey(name: 'totalNotifications')
-  final int totalNotifications;
-
-  @JsonKey(name: 'unreadNotifications')
-  final int unreadNotifications;
-
-  @JsonKey(name: 'readNotifications')
-  final int readNotifications;
-
-  @JsonKey(name: 'notificationsToday')
-  final int notificationsToday;
-
-  @JsonKey(name: 'notificationsThisWeek')
-  final int notificationsThisWeek;
-
-  @JsonKey(name: 'notificationsThisMonth')
-  final int notificationsThisMonth;
-
-  @JsonKey(name: 'typeDistribution')
-  final Map<String, int> typeDistribution;
-
-  @JsonKey(name: 'lastNotificationDate')
-  final DateTime? lastNotificationDate;
-
-  @JsonKey(name: 'averageNotificationsPerDay')
-  final double averageNotificationsPerDay;
-
-  const NotificationStatsDto({
-    required this.totalNotifications,
-    required this.unreadNotifications,
-    required this.readNotifications,
-    required this.notificationsToday,
-    required this.notificationsThisWeek,
-    required this.notificationsThisMonth,
-    required this.typeDistribution,
-    this.lastNotificationDate,
-    required this.averageNotificationsPerDay,
-  });
-
-  factory NotificationStatsDto.fromJson(Map<String, dynamic> json) =>
-      _$NotificationStatsDtoFromJson(json);
-
-  Map<String, dynamic> toJson() => _$NotificationStatsDtoToJson(this);
 
   @override
-  String toString() {
-    return 'NotificationStatsDto('
-        'total: $totalNotifications, '
-        'unread: $unreadNotifications, '
-        'today: $notificationsToday)';
-  }
+  String toString() =>
+      'NotificationPageDto(count: ${notifications.length}, total: $totalCount, '
+      'page: $page, unread: $unreadCount)';
 }

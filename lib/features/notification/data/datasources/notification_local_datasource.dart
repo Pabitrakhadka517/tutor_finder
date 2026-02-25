@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/exceptions/cache_exception.dart';
@@ -23,14 +22,6 @@ abstract class NotificationLocalDataSource {
   Future<int?> getCachedUnreadCount(String userId);
   Future<void> removeCachedUnreadCount(String userId);
 
-  // Statistics Caching
-  Future<void> cacheNotificationStats(
-    String userId,
-    NotificationStatsDto stats,
-  );
-  Future<NotificationStatsDto?> getCachedNotificationStats(String userId);
-  Future<void> removeCachedNotificationStats(String userId);
-
   // Cache Management
   Future<void> clearAllCache();
   Future<void> clearUserCache(String userId);
@@ -38,7 +29,6 @@ abstract class NotificationLocalDataSource {
   Future<void> setCacheTimestamp(String cacheKey);
 }
 
-@LazySingleton(as: NotificationLocalDataSource)
 class NotificationLocalDataSourceImpl implements NotificationLocalDataSource {
   final SharedPreferences _sharedPreferences;
 
@@ -51,7 +41,6 @@ class NotificationLocalDataSourceImpl implements NotificationLocalDataSource {
   // Cache duration in milliseconds (15 minutes for notifications, 5 minutes for counts)
   static const int _notificationCacheDuration = 15 * 60 * 1000;
   static const int _countCacheDuration = 5 * 60 * 1000;
-  static const int _statsCacheDuration = 30 * 60 * 1000;
 
   NotificationLocalDataSourceImpl(this._sharedPreferences);
 
@@ -189,54 +178,6 @@ class NotificationLocalDataSourceImpl implements NotificationLocalDataSource {
       await _sharedPreferences.remove('$cacheKey$_timestampSuffix');
     } catch (e) {
       throw CacheException('Failed to remove cached unread count: $e');
-    }
-  }
-
-  @override
-  Future<void> cacheNotificationStats(
-    String userId,
-    NotificationStatsDto stats,
-  ) async {
-    try {
-      final cacheKey = '$_statsCachePrefix$userId';
-      final json = jsonEncode(stats.toJson());
-      await _sharedPreferences.setString(cacheKey, json);
-      await setCacheTimestamp(cacheKey);
-    } catch (e) {
-      throw CacheException('Failed to cache notification stats: $e');
-    }
-  }
-
-  @override
-  Future<NotificationStatsDto?> getCachedNotificationStats(
-    String userId,
-  ) async {
-    try {
-      final cacheKey = '$_statsCachePrefix$userId';
-
-      if (await _isCacheExpired(cacheKey, _statsCacheDuration)) {
-        await removeCachedNotificationStats(userId);
-        return null;
-      }
-
-      final json = _sharedPreferences.getString(cacheKey);
-      if (json == null) return null;
-
-      final Map<String, dynamic> map = jsonDecode(json);
-      return NotificationStatsDto.fromJson(map);
-    } catch (e) {
-      throw CacheException('Failed to get cached notification stats: $e');
-    }
-  }
-
-  @override
-  Future<void> removeCachedNotificationStats(String userId) async {
-    try {
-      final cacheKey = '$_statsCachePrefix$userId';
-      await _sharedPreferences.remove(cacheKey);
-      await _sharedPreferences.remove('$cacheKey$_timestampSuffix');
-    } catch (e) {
-      throw CacheException('Failed to remove cached notification stats: $e');
     }
   }
 

@@ -92,7 +92,7 @@ class ApiEndpoints {
       '$tutorRatings/{tutorId}/recalculate';
 
   // Notification endpoints
-  static const String notifications = '/notifications';
+  static const String notifications = '/api/notifications';
   static const String createNotification = '$notifications';
   static const String getNotification = '$notifications/{id}';
   static const String getNotifications = '$notifications';

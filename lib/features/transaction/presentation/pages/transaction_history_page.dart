@@ -25,8 +25,12 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
   }
 
   void _loadTransactions() {
-    ref.read(transactionNotifierProvider.notifier).fetchSentTransactions();
-    ref.read(transactionNotifierProvider.notifier).fetchReceivedTransactions();
+    Future.microtask(() {
+      ref.read(transactionNotifierProvider.notifier).fetchSentTransactions();
+      ref
+          .read(transactionNotifierProvider.notifier)
+          .fetchReceivedTransactions();
+    });
   }
 
   @override
@@ -127,10 +131,7 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
         itemCount: transactions.length,
         itemBuilder: (context, index) {
           final tx = transactions[index];
-          return _TransactionCard(
-            transaction: tx,
-            isSent: isSent,
-          );
+          return _TransactionCard(transaction: tx, isSent: isSent);
         },
       ),
     );
@@ -141,10 +142,7 @@ class _TransactionCard extends StatelessWidget {
   final TransactionEntity transaction;
   final bool isSent;
 
-  const _TransactionCard({
-    required this.transaction,
-    required this.isSent,
-  });
+  const _TransactionCard({required this.transaction, required this.isSent});
 
   @override
   Widget build(BuildContext context) {
@@ -152,8 +150,9 @@ class _TransactionCard extends StatelessWidget {
         ? (transaction.receiverName ?? 'Tutor')
         : (transaction.senderName ?? 'Student');
     final image = isSent ? transaction.receiverImage : transaction.senderImage;
-    final dateStr = DateFormat('MMM dd, yyyy • hh:mm a')
-        .format(transaction.createdAt.toLocal());
+    final dateStr = DateFormat(
+      'MMM dd, yyyy • hh:mm a',
+    ).format(transaction.createdAt.toLocal());
 
     Color statusColor;
     String statusText;
@@ -209,19 +208,13 @@ class _TransactionCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     dateStr,
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
                   ),
                   if (transaction.bookingStartTime != null) ...[
                     const SizedBox(height: 2),
                     Text(
                       'Session: ${DateFormat('MMM dd').format(transaction.bookingStartTime!)}',
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 11,
-                      ),
+                      style: TextStyle(color: Colors.grey[400], fontSize: 11),
                     ),
                   ],
                 ],

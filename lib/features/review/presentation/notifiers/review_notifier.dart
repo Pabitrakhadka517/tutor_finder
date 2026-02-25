@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/review_entity.dart';
-import '../../domain/repositories/review_repository.dart';
+import '../../domain/review_repository.dart';
 import '../state/review_state.dart';
 
 class ReviewListNotifier extends StateNotifier<ReviewListState> {
@@ -8,18 +7,20 @@ class ReviewListNotifier extends StateNotifier<ReviewListState> {
   ReviewListNotifier(this._repository) : super(const ReviewListState());
 
   Future<void> fetchTutorReviews(String tutorId) async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
     final result = await _repository.getTutorReviews(tutorId);
 
     result.fold(
       (failure) => state = state.copyWith(
         isLoading: false,
-        errorMessage: failure.toString(),
+        errorMessage: failure.message,
       ),
-      (reviews) => state = state.copyWith(
+      (data) => state = state.copyWith(
         isLoading: false,
-        reviews: reviews,
-        totalReviews: reviews.length,
+        reviews: data.reviews,
+        averageRating: data.averageRating,
+        totalReviews: data.totalReviews,
       ),
     );
   }
@@ -31,28 +32,22 @@ class CreateReviewNotifier extends StateNotifier<CreateReviewState> {
 
   Future<bool> submitReview({
     required String bookingId,
-    String tutorId = '',
-    String studentId = '',
     required int rating,
     String? comment,
   }) async {
     state = const CreateReviewState(isLoading: true);
 
-    final review = ReviewEntity.create(
+    final result = await _repository.createReview(
       bookingId: bookingId,
-      tutorId: tutorId,
-      studentId: studentId,
       rating: rating,
       comment: comment,
     );
-
-    final result = await _repository.createReview(review);
 
     return result.fold(
       (failure) {
         state = CreateReviewState(
           isLoading: false,
-          errorMessage: failure.toString(),
+          errorMessage: failure.message,
         );
         return false;
       },

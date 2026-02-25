@@ -8,8 +8,7 @@ class StudyResourcesPage extends ConsumerStatefulWidget {
   const StudyResourcesPage({super.key});
 
   @override
-  ConsumerState<StudyResourcesPage> createState() =>
-      _StudyResourcesPageState();
+  ConsumerState<StudyResourcesPage> createState() => _StudyResourcesPageState();
 }
 
 class _StudyResourcesPageState extends ConsumerState<StudyResourcesPage> {
@@ -18,7 +17,9 @@ class _StudyResourcesPageState extends ConsumerState<StudyResourcesPage> {
   @override
   void initState() {
     super.initState();
-    ref.read(studyNotifierProvider.notifier).fetchResources();
+    Future.microtask(
+      () => ref.read(studyNotifierProvider.notifier).fetchResources(),
+    );
   }
 
   @override
@@ -78,56 +79,59 @@ class _StudyResourcesPageState extends ConsumerState<StudyResourcesPage> {
             child: studyState.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : studyState.error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              studyState.error!,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              onPressed: () => ref
-                                  .read(studyNotifierProvider.notifier)
-                                  .fetchResources(),
-                              child: const Text('Retry'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          studyState.error!,
+                          style: const TextStyle(color: Colors.red),
                         ),
-                      )
-                    : studyState.resources.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.library_books,
-                                    size: 64, color: Colors.grey[300]),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No resources available',
-                                  style: TextStyle(
-                                    color: Colors.grey[500],
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: () async => ref
-                                .read(studyNotifierProvider.notifier)
-                                .fetchResources(category: _selectedCategory),
-                            child: ListView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: studyState.resources.length,
-                              itemBuilder: (context, index) {
-                                return _ResourceCard(
-                                  resource: studyState.resources[index],
-                                );
-                              },
-                            ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () => ref
+                              .read(studyNotifierProvider.notifier)
+                              .fetchResources(),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : studyState.resources.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.library_books,
+                          size: 64,
+                          color: Colors.grey[300],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No resources available',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 16,
                           ),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () async => ref
+                        .read(studyNotifierProvider.notifier)
+                        .fetchResources(category: _selectedCategory),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: studyState.resources.length,
+                      itemBuilder: (context, index) {
+                        return _ResourceCard(
+                          resource: studyState.resources[index],
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -189,8 +193,10 @@ class _ResourceCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(4),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/notification_providers.dart';
 
 class NotificationPage extends ConsumerStatefulWidget {
@@ -14,10 +15,14 @@ class _NotificationPageState extends ConsumerState<NotificationPage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () =>
-          ref.read(notificationNotifierProvider.notifier).fetchNotifications(),
-    );
+    Future.microtask(() {
+      final userId = ref.read(authNotifierProvider).user?.id;
+      final notifier = ref.read(notificationNotifierProvider.notifier);
+      if (userId != null) {
+        notifier.setCurrentUser(userId);
+      }
+      notifier.fetchNotifications();
+    });
   }
 
   IconData _iconForType(String type) {
@@ -99,11 +104,9 @@ class _NotificationPageState extends ConsumerState<NotificationPage> {
               ),
             )
           : RefreshIndicator(
-              onRefresh: () async {
-                ref
-                    .read(notificationNotifierProvider.notifier)
-                    .fetchNotifications();
-              },
+              onRefresh: () => ref
+                  .read(notificationNotifierProvider.notifier)
+                  .fetchNotifications(),
               child: ListView.builder(
                 itemCount: state.notifications.length,
                 itemBuilder: (context, index) {

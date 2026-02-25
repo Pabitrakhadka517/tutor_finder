@@ -5,6 +5,7 @@ import '../providers/auth_providers.dart';
 import '../state/auth_state.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart'; // ForgotPasswordScreen
+import '../../../../app/routes/app_routes.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   final String role;
@@ -100,7 +101,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               IconButton(
                 icon: const Icon(Icons.arrow_back),
                 color: Colors.blue.shade700,
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pushReplacementNamed(
+                  context,
+                  AppRoutes.roleSelection,
+                ),
               ),
               const SizedBox(height: 16),
 

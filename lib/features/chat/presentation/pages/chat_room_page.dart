@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/socket/socket_service.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/chat_providers.dart';
 import '../../domain/entities/chat_entities.dart';
 
@@ -40,8 +41,18 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
   }
 
   Future<void> _loadCurrentUser() async {
+    // Try auth state first (most reliable)
+    final authUser = ref.read(authNotifierProvider).user;
+    if (authUser != null) {
+      if (mounted) setState(() => _currentUserId = authUser.id);
+      return;
+    }
+
+    // Fallback: try both storage keys (auth stores as 'user_id',
+    // StorageService stores as 'userId')
     const storage = FlutterSecureStorage();
-    final userId = await storage.read(key: 'userId');
+    var userId = await storage.read(key: 'user_id');
+    userId ??= await storage.read(key: 'userId');
     if (mounted) setState(() => _currentUserId = userId);
   }
 

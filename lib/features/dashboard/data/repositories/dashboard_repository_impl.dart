@@ -182,8 +182,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
       totalHoursLearned: 0,
       totalTutorsWorkedWith: model.totalTutorsWorkedWith,
       favoriteSubjects: const [],
-      recentBookings: const [],
-      recentTransactions: const [],
+      recentBookings: model.parseRecentBookings(),
+      recentTransactions: model.parseRecentTransactions(),
       lastUpdated: now,
       createdAt: now,
     );
@@ -209,8 +209,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
       totalReviews: 0,
       teachingSubjects: const [],
       verificationStatus: _mapVerificationStatus(model.verificationStatus),
-      recentBookings: const [],
-      recentTransactions: const [],
+      recentBookings: const [], // TODO: parse from model when needed
+      recentTransactions: const [], // TODO: parse from model when needed
       lastUpdated: now,
       createdAt: now,
     );

@@ -1,26 +1,134 @@
+import '../../domain/entities/dashboard_entity.dart';
 import '../../domain/entities/dashboard_stats.dart';
 
 class StudentDashboardModel extends StudentDashboardStats {
+  final List<Map<String, dynamic>> rawRecentBookings;
+  final List<Map<String, dynamic>> rawRecentTransactions;
+
   const StudentDashboardModel({
     super.totalBookings,
     super.upcomingBookings,
     super.completedBookings,
     super.totalSpent,
     super.totalTutorsWorkedWith,
+    this.rawRecentBookings = const [],
+    this.rawRecentTransactions = const [],
   });
 
-  factory StudentDashboardModel.fromJson(Map<String, dynamic> json) {
+  factory StudentDashboardModel.fromJson(
+    Map<String, dynamic> json, {
+    List<dynamic> recentBookings = const [],
+    List<dynamic> recentTransactions = const [],
+  }) {
     return StudentDashboardModel(
       totalBookings: _toInt(json['totalBookings']),
       upcomingBookings: _toInt(json['upcomingBookings']),
       completedBookings: _toInt(json['completedBookings']),
       totalSpent: _toDouble(json['totalSpent']),
       totalTutorsWorkedWith: _toInt(json['totalTutorsWorkedWith']),
+      rawRecentBookings: recentBookings
+          .whereType<Map<String, dynamic>>()
+          .toList(),
+      rawRecentTransactions: recentTransactions
+          .whereType<Map<String, dynamic>>()
+          .toList(),
     );
+  }
+
+  /// Parse raw booking JSON into [RecentBookingEntity] list
+  List<RecentBookingEntity> parseRecentBookings() {
+    return rawRecentBookings.map((b) {
+      // Tutor can be populated object or string
+      String tutorId = '';
+      String tutorName = '';
+      if (b['tutor'] is Map) {
+        final t = b['tutor'] as Map<String, dynamic>;
+        tutorId = t['_id']?.toString() ?? t['id']?.toString() ?? '';
+        tutorName = t['fullName']?.toString() ?? t['name']?.toString() ?? '';
+      } else {
+        tutorId = b['tutor']?.toString() ?? '';
+      }
+
+      return RecentBookingEntity(
+        id: b['_id']?.toString() ?? b['id']?.toString() ?? '',
+        studentId: b['student']?.toString() ?? '',
+        tutorId: tutorName.isNotEmpty ? tutorName : tutorId,
+        subject:
+            b['subject']?.toString() ?? b['title']?.toString() ?? 'Session',
+        scheduledDate:
+            DateTime.tryParse(
+              b['startTime']?.toString() ??
+                  b['scheduledDate']?.toString() ??
+                  '',
+            ) ??
+            DateTime.now(),
+        status: _parseBookingStatus(b['status']?.toString() ?? 'pending'),
+        amount: _toDouble(b['price'] ?? b['amount']),
+        duration: _toInt(b['duration'] ?? 60),
+        notes: b['notes']?.toString(),
+      );
+    }).toList();
+  }
+
+  /// Parse raw transaction JSON into [RecentTransactionEntity] list
+  List<RecentTransactionEntity> parseRecentTransactions() {
+    return rawRecentTransactions.map((t) {
+      return RecentTransactionEntity(
+        id: t['_id']?.toString() ?? t['id']?.toString() ?? '',
+        userId: t['sender']?.toString() ?? '',
+        type: TransactionType.payment,
+        amount: _toDouble(t['amount']),
+        createdAt:
+            DateTime.tryParse(t['createdAt']?.toString() ?? '') ??
+            DateTime.now(),
+        status: _parseTransactionStatus(t['status']?.toString() ?? 'pending'),
+        description: t['description']?.toString() ?? 'Payment',
+        bookingId: t['booking']?.toString(),
+      );
+    }).toList();
+  }
+
+  static BookingStatus _parseBookingStatus(String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return BookingStatus.pending;
+      case 'CONFIRMED':
+        return BookingStatus.confirmed;
+      case 'COMPLETED':
+        return BookingStatus.completed;
+      case 'CANCELLED':
+        return BookingStatus.cancelled;
+      case 'PAID':
+      case 'IN_PROGRESS':
+        return BookingStatus.inProgress;
+      case 'SCHEDULED':
+        return BookingStatus.scheduled;
+      default:
+        return BookingStatus.pending;
+    }
+  }
+
+  static TransactionStatus _parseTransactionStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'done':
+      case 'completed':
+        return TransactionStatus.completed;
+      case 'failed':
+        return TransactionStatus.failed;
+      case 'refunded':
+        return TransactionStatus.refunded;
+      case 'processing':
+        return TransactionStatus.processing;
+      default:
+        return TransactionStatus.pending;
+    }
   }
 }
 
 class TutorDashboardModel extends TutorDashboardStats {
+  final List<Map<String, dynamic>> rawRecentBookings;
+  final List<Map<String, dynamic>> rawRecentTransactions;
+
   const TutorDashboardModel({
     super.totalEarnings,
     super.totalStudentsWorkedWith,
@@ -29,9 +137,15 @@ class TutorDashboardModel extends TutorDashboardStats {
     super.pendingBookings,
     super.averageRating,
     super.verificationStatus,
+    this.rawRecentBookings = const [],
+    this.rawRecentTransactions = const [],
   });
 
-  factory TutorDashboardModel.fromJson(Map<String, dynamic> json) {
+  factory TutorDashboardModel.fromJson(
+    Map<String, dynamic> json, {
+    List<dynamic> recentBookings = const [],
+    List<dynamic> recentTransactions = const [],
+  }) {
     return TutorDashboardModel(
       totalEarnings: _toDouble(json['totalEarnings']),
       totalStudentsWorkedWith: _toInt(json['totalStudentsWorkedWith']),
@@ -40,6 +154,12 @@ class TutorDashboardModel extends TutorDashboardStats {
       pendingBookings: _toInt(json['pendingBookings']),
       averageRating: _toDouble(json['averageRating']),
       verificationStatus: json['verificationStatus'] as String? ?? 'PENDING',
+      rawRecentBookings: recentBookings
+          .whereType<Map<String, dynamic>>()
+          .toList(),
+      rawRecentTransactions: recentTransactions
+          .whereType<Map<String, dynamic>>()
+          .toList(),
     );
   }
 }

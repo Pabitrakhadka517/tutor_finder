@@ -1,7 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../domain/entities/dashboard_entity.dart';
-import '../../domain/value_objects/user_role.dart';
 
 part 'dashboard_dto.freezed.dart';
 part 'dashboard_dto.g.dart';

@@ -1,52 +1,47 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:injectable/injectable.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
+import '../../../../core/api/api_endpoints.dart';
 import '../../../../core/network/websocket_events.dart';
 import '../dtos/notification_dto.dart';
 
+/// WebSocket data source for real-time notification updates.
+///
+/// Connects to the backend Socket.IO server using JWT authentication
+/// (same as the backend auth middleware). Listens for `new_notification`
+/// events and exposes them as streams.
 abstract class NotificationWebSocketDataSource {
-  // Connection Management
   Future<void> connect(String userId);
   Future<void> disconnect();
   bool get isConnected;
 
-  // Real-time Notification Streams
+  /// Stream of incoming real-time notifications
   Stream<NotificationDto> get notificationStream;
+
+  /// Stream of notification IDs that were marked as read
   Stream<String> get notificationReadStream;
+
+  /// Stream of notification IDs that were deleted
   Stream<String> get notificationDeletedStream;
+
+  /// Stream of updated unread counts
   Stream<int> get unreadCountStream;
-  Stream<String> get connectionStatusStream;
-
-  // Subscription Management
-  Future<void> subscribeToNotifications(String userId);
-  Future<void> unsubscribeFromNotifications();
-
-  // Event Emission
-  Future<void> emitMarkAsRead(String notificationId);
-  Future<void> emitMarkAllAsRead();
-  Future<void> emitDeleteNotification(String notificationId);
 }
 
-@LazySingleton(as: NotificationWebSocketDataSource)
 class NotificationWebSocketDataSourceImpl
     implements NotificationWebSocketDataSource {
   io.Socket? _socket;
-  String? _currentUserId;
+  final FlutterSecureStorage _secureStorage;
 
-  // For streaming events
-  final StreamController<NotificationDto> _notificationController =
-      StreamController<NotificationDto>.broadcast();
-  final StreamController<String> _readController =
-      StreamController<String>.broadcast();
-  final StreamController<String> _deletedController =
-      StreamController<String>.broadcast();
-  final StreamController<int> _unreadCountController =
-      StreamController<int>.broadcast();
-  final StreamController<String> _connectionStatusController =
-      StreamController<String>.broadcast();
+  final _notificationController = StreamController<NotificationDto>.broadcast();
+  final _readController = StreamController<String>.broadcast();
+  final _deletedController = StreamController<String>.broadcast();
+  final _unreadCountController = StreamController<int>.broadcast();
+
+  NotificationWebSocketDataSourceImpl({FlutterSecureStorage? secureStorage})
+    : _secureStorage = secureStorage ?? const FlutterSecureStorage();
 
   @override
   Stream<NotificationDto> get notificationStream =>
@@ -62,198 +57,142 @@ class NotificationWebSocketDataSourceImpl
   Stream<int> get unreadCountStream => _unreadCountController.stream;
 
   @override
-  Stream<String> get connectionStatusStream =>
-      _connectionStatusController.stream;
-
-  @override
   bool get isConnected => _socket?.connected ?? false;
 
   @override
   Future<void> connect(String userId) async {
     try {
-      await disconnect(); // Ensure clean connection
+      await disconnect();
 
-      _currentUserId = userId;
+      // Read JWT token for socket authentication
+      final token = await _secureStorage.read(key: 'access_token');
+
+      // Use the same base URL as the REST API
+      final socketUrl = ApiEndpoints.baseUrl;
 
       _socket = io.io(
-        'ws://localhost:3000', // Replace with actual server URL
+        socketUrl,
         io.OptionBuilder()
             .setTransports(['websocket'])
             .enableAutoConnect()
             .enableForceNew()
-            .setQuery({'userId': userId})
+            .setAuth({'token': token ?? ''}) // JWT token for auth middleware
             .build(),
       );
 
-      // Set up event listeners
       _setupEventListeners();
 
-      // Wait for connection
+      // Wait for connection with timeout
       final completer = Completer<void>();
+
       _socket!.onConnect((_) {
-        _connectionStatusController.add('connected');
-        completer.complete();
+        if (!completer.isCompleted) completer.complete();
       });
 
       _socket!.onConnectError((data) {
-        _connectionStatusController.add('error');
         if (!completer.isCompleted) {
-          completer.completeError('Connection failed: $data');
+          completer.completeError('Socket connection failed: $data');
         }
       });
 
       _socket!.connect();
-      await completer.future;
 
-      // Auto-subscribe to notifications
-      await subscribeToNotifications(userId);
+      await completer.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          // Don't throw - just log. WebSocket is supplementary.
+          print('WebSocket connection timed out (non-fatal)');
+        },
+      );
     } catch (e) {
-      _connectionStatusController.add('error');
-      throw Exception('Failed to connect to notification service: $e');
+      // WebSocket failures should not break the app
+      print('WebSocket connect error (non-fatal): $e');
     }
   }
 
   @override
   Future<void> disconnect() async {
     try {
-      if (_socket?.connected == true) {
-        await unsubscribeFromNotifications();
-      }
-
       _socket?.disconnect();
       _socket?.dispose();
       _socket = null;
-      _currentUserId = null;
-
-      _connectionStatusController.add('disconnected');
     } catch (e) {
-      print('Warning: Error during WebSocket disconnect: $e');
+      print('WebSocket disconnect warning: $e');
     }
-  }
-
-  @override
-  Future<void> subscribeToNotifications(String userId) async {
-    if (!isConnected) {
-      throw Exception('Not connected to notification service');
-    }
-
-    _socket!.emit(WebSocketEvents.subscribeNotifications, {'userId': userId});
-  }
-
-  @override
-  Future<void> unsubscribeFromNotifications() async {
-    if (!isConnected) return;
-
-    _socket!.emit(WebSocketEvents.unsubscribeNotifications, {
-      'userId': _currentUserId,
-    });
-  }
-
-  @override
-  Future<void> emitMarkAsRead(String notificationId) async {
-    if (!isConnected) {
-      throw Exception('Not connected to notification service');
-    }
-
-    _socket!.emit(WebSocketEvents.notificationRead, {
-      'notificationId': notificationId,
-      'userId': _currentUserId,
-    });
-  }
-
-  @override
-  Future<void> emitMarkAllAsRead() async {
-    if (!isConnected) {
-      throw Exception('Not connected to notification service');
-    }
-
-    _socket!.emit(WebSocketEvents.markAllNotificationsRead, {
-      'userId': _currentUserId,
-    });
-  }
-
-  @override
-  Future<void> emitDeleteNotification(String notificationId) async {
-    if (!isConnected) {
-      throw Exception('Not connected to notification service');
-    }
-
-    _socket!.emit(WebSocketEvents.notificationDeleted, {
-      'notificationId': notificationId,
-      'userId': _currentUserId,
-    });
   }
 
   void _setupEventListeners() {
     if (_socket == null) return;
 
-    // New notification received
+    // The backend emits 'new_notification' with the notification document
     _socket!.on(WebSocketEvents.newNotification, (data) {
       try {
-        final notificationData = data as Map<String, dynamic>;
-        final notification = NotificationDto.fromJson(notificationData);
-        _notificationController.add(notification);
+        if (data is Map<String, dynamic>) {
+          final notification = NotificationDto.fromJson(data);
+          _notificationController.add(notification);
+        }
       } catch (e) {
-        print('Error parsing new notification: $e');
+        print('Error parsing realtime notification: $e');
       }
     });
 
-    // Notification marked as read
+    // Listen for read status updates
     _socket!.on(WebSocketEvents.notificationRead, (data) {
       try {
-        final notificationId = data['notificationId'] as String;
-        _readController.add(notificationId);
+        if (data is Map) {
+          final id = (data['notificationId'] ?? data['_id'] ?? '').toString();
+          if (id.isNotEmpty) _readController.add(id);
+        }
       } catch (e) {
         print('Error parsing notification read event: $e');
       }
     });
 
-    // Notification deleted
+    // Listen for deletion events
     _socket!.on(WebSocketEvents.notificationDeleted, (data) {
       try {
-        final notificationId = data['notificationId'] as String;
-        _deletedController.add(notificationId);
+        if (data is Map) {
+          final id = (data['notificationId'] ?? data['_id'] ?? '').toString();
+          if (id.isNotEmpty) _deletedController.add(id);
+        }
       } catch (e) {
         print('Error parsing notification deleted event: $e');
       }
     });
 
-    // Unread count updated
+    // Listen for unread count updates
     _socket!.on(WebSocketEvents.notificationCountUpdated, (data) {
       try {
-        final count = data['count'] as int;
-        _unreadCountController.add(count);
+        if (data is Map) {
+          final count = (data['count'] as num?)?.toInt();
+          if (count != null) _unreadCountController.add(count);
+        } else if (data is num) {
+          _unreadCountController.add(data.toInt());
+        }
       } catch (e) {
         print('Error parsing unread count update: $e');
       }
     });
 
-    // Connection status events
-    _socket!.onDisconnect((_) {
-      _connectionStatusController.add('disconnected');
+    // Handle reconnection: backend auto-joins user to their room on connect
+    _socket!.onReconnect((_) {
+      print('WebSocket reconnected');
     });
 
-    _socket!.onReconnect((_) {
-      _connectionStatusController.add('reconnected');
-      // Re-subscribe after reconnection
-      if (_currentUserId != null) {
-        subscribeToNotifications(_currentUserId!);
-      }
+    _socket!.onDisconnect((_) {
+      print('WebSocket disconnected');
     });
 
     _socket!.onError((error) {
-      _connectionStatusController.add('error');
       print('WebSocket error: $error');
     });
   }
 
-  @override
   void dispose() {
     disconnect();
     _notificationController.close();
     _readController.close();
     _deletedController.close();
     _unreadCountController.close();
-    _connectionStatusController.close();
   }
 }

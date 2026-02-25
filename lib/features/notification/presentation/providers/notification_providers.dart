@@ -1,5 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/api/api_client.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/providers/shared_prefs_provider.dart';
 import '../../data/datasources/notification_local_datasource.dart';
@@ -11,9 +12,9 @@ import '../notifiers/notification_notifier.dart';
 import '../state/notification_state.dart';
 
 // ================= Core =================
-final _dioProvider = Provider<Dio>((ref) => Dio());
+// Use ApiClient Dio instance which has baseUrl + auth interceptor configured
 final _dioClientProvider = Provider<DioClient>(
-  (ref) => DioClient(ref.read(_dioProvider)),
+  (ref) => DioClient(ref.read(apiClientProvider).dio),
 );
 
 // ================= Data Sources =================

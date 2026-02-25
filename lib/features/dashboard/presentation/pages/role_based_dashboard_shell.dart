@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../app/theme/app_colors.dart';
 
 import '../../../../core/services/socket/socket_service.dart';
 import '../../../admin/presentation/pages/admin_users_page.dart';
@@ -13,7 +14,6 @@ import '../../../notification/presentation/pages/notification_page.dart';
 import '../../../notification/presentation/providers/notification_providers.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 import '../../../study/presentation/pages/study_resources_page.dart';
-import '../../../transaction/presentation/pages/transaction_history_page.dart';
 import '../../../tutor/presentation/pages/tutor_list_page.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
 import 'wallet_page.dart';
@@ -79,7 +79,7 @@ class _RoleBasedDashboardShellState
     final unreadCount = notificationState.unreadCount;
 
     return Scaffold(
-      backgroundColor: _backgroundColorForRole(role),
+      backgroundColor: AppColors.background,
       appBar: _buildAppBar(role, user, unreadCount),
       drawer: _buildDrawer(context, user, role),
       body: _buildBody(role),
@@ -97,23 +97,24 @@ class _RoleBasedDashboardShellState
     return AppBar(
       title: Text(
         _appBarTitle(role),
-        style: TextStyle(
+        style: const TextStyle(
           fontWeight: FontWeight.bold,
-          color: _primaryColorForRole(role),
+          color: AppColors.textPrimary,
         ),
       ),
       centerTitle: true,
       elevation: 0,
-      backgroundColor: _backgroundColorForRole(role),
-      iconTheme: IconThemeData(color: _primaryColorForRole(role)),
+      scrolledUnderElevation: 1,
+      backgroundColor: AppColors.surface,
+      iconTheme: const IconThemeData(color: AppColors.primaryLight),
       actions: [
         // Notification bell with badge
         Stack(
           children: [
             IconButton(
-              icon: Icon(
+              icon: const Icon(
                 Icons.notifications_rounded,
-                color: _primaryColorForRole(role),
+                color: AppColors.primaryLight,
               ),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const NotificationPage()),
@@ -126,7 +127,7 @@ class _RoleBasedDashboardShellState
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(
-                    color: Colors.red,
+                    color: AppColors.badge,
                     shape: BoxShape.circle,
                   ),
                   constraints: const BoxConstraints(
@@ -145,18 +146,6 @@ class _RoleBasedDashboardShellState
                 ),
               ),
           ],
-        ),
-        // Profile icon
-        IconButton(
-          icon: Icon(Icons.person_rounded, color: _primaryColorForRole(role)),
-          onPressed: () {
-            _showProfileBottomSheet(
-              context,
-              user?.name ?? 'User',
-              user?.email ?? '',
-              role,
-            );
-          },
         ),
       ],
     );
@@ -235,21 +224,25 @@ class _RoleBasedDashboardShellState
   Widget _buildBottomNav(UserRole role) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: AppColors.shadowNeutral,
             blurRadius: 20,
-            offset: const Offset(0, -5),
+            offset: const Offset(0, -4),
           ),
         ],
       ),
       child: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: _primaryColorForRole(role),
-        unselectedItemColor: Colors.grey.shade400,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        backgroundColor: AppColors.surface,
+        selectedItemColor: AppColors.primaryLight,
+        unselectedItemColor: AppColors.textMuted,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+        ),
+        unselectedLabelStyle: const TextStyle(fontSize: 11),
         currentIndex: _selectedIndex,
         onTap: (index) {
           if (index == _selectedIndex) return;
@@ -330,14 +323,15 @@ class _RoleBasedDashboardShellState
     final email = user?.email ?? '';
 
     return Drawer(
+      backgroundColor: AppColors.surface,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           // Header
           DrawerHeader(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: _gradientColorsForRole(role),
+                colors: AppColors.primaryGradient,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -356,13 +350,10 @@ class _RoleBasedDashboardShellState
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: Colors.white,
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: _primaryColorForRole(role),
-                      ),
+                    child: Icon(
+                      Icons.person_rounded,
+                      size: 32,
+                      color: AppColors.primaryLight,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -590,151 +581,15 @@ class _RoleBasedDashboardShellState
 
   Widget _drawerItem(IconData icon, String title, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(icon, color: Colors.grey.shade700),
-      title: Text(title, style: TextStyle(color: Colors.grey.shade700)),
-      onTap: onTap,
-    );
-  }
-
-  // =================== PROFILE BOTTOM SHEET ===================
-
-  void _showProfileBottomSheet(
-    BuildContext context,
-    String name,
-    String email,
-    UserRole role,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: _primaryColorForRole(
-                role,
-              ).withValues(alpha: 0.15),
-              child: Text(
-                name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: _primaryColorForRole(role),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              name,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade900,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  email,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _primaryColorForRole(role).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    _roleLabel(role),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: _primaryColorForRole(role),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: Icon(
-                Icons.edit_rounded,
-                color: _primaryColorForRole(role),
-              ),
-              title: const Text('View Profile'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const ProfilePage()));
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                Icons.settings_rounded,
-                color: _primaryColorForRole(role),
-              ),
-              title: const Text('Settings'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Settings - Coming Soon!')),
-                );
-              },
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showLogoutDialog(context, ref);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade400,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Logout',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
+      leading: Icon(icon, color: AppColors.primaryLight),
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w500,
         ),
       ),
+      onTap: onTap,
     );
   }
 
@@ -794,7 +649,7 @@ class _RoleBasedDashboardShellState
     );
   }
 
-  // =================== ROLE-BASED THEMING ===================
+  // =================== ROLE LABELS ===================
 
   String _appBarTitle(UserRole role) {
     switch (role) {
@@ -815,39 +670,6 @@ class _RoleBasedDashboardShellState
         return 'TUTOR';
       case UserRole.admin:
         return 'ADMIN';
-    }
-  }
-
-  Color _primaryColorForRole(UserRole role) {
-    switch (role) {
-      case UserRole.student:
-        return Colors.blue.shade700;
-      case UserRole.tutor:
-        return Colors.green.shade700;
-      case UserRole.admin:
-        return Colors.deepPurple.shade700;
-    }
-  }
-
-  Color _backgroundColorForRole(UserRole role) {
-    switch (role) {
-      case UserRole.student:
-        return Colors.blue.shade50;
-      case UserRole.tutor:
-        return Colors.green.shade50;
-      case UserRole.admin:
-        return Colors.deepPurple.shade50;
-    }
-  }
-
-  List<Color> _gradientColorsForRole(UserRole role) {
-    switch (role) {
-      case UserRole.student:
-        return [Colors.blue.shade700, Colors.blue.shade500];
-      case UserRole.tutor:
-        return [Colors.green.shade700, Colors.teal.shade500];
-      case UserRole.admin:
-        return [Colors.deepPurple.shade700, Colors.purple.shade500];
     }
   }
 }
