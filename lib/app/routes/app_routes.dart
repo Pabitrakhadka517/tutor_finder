@@ -6,6 +6,7 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../../features/dashboard/presentation/pages/role_based_dashboard_shell.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/tutor/presentation/pages/tutor_list_page.dart';
@@ -82,7 +83,7 @@ class AppRoutes {
       case forgotPassword:
         return _buildRoute(const ForgotPasswordPage(), settings);
       case dashboard:
-        return _buildRoute(const DashboardPage(), settings);
+        return _buildRoute(const RoleBasedDashboardShell(), settings);
       case profile:
         return _buildRoute(const ProfilePage(), settings);
       case editProfile:

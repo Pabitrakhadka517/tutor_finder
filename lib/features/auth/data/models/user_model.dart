@@ -35,7 +35,7 @@ class UserModel extends User {
   }) : super(
          id: hiveId,
          email: hiveEmail,
-         name: hiveName,
+         fullName: hiveName,
          role: hiveRole == 'admin'
              ? UserRole.admin
              : hiveRole == 'tutor'
@@ -49,7 +49,7 @@ class UserModel extends User {
     return UserModel(
       hiveId: user.id,
       hiveEmail: user.email,
-      hiveName: user.name,
+      hiveName: user.fullName,
       hashedPassword: hashedPassword,
       hiveCreatedAt: user.createdAt,
       hiveRole: user.role.name,
@@ -61,7 +61,7 @@ class UserModel extends User {
     return User(
       id: hiveId,
       email: hiveEmail,
-      name: hiveName,
+      fullName: hiveName,
       role: hiveRole == 'admin'
           ? UserRole.admin
           : hiveRole == 'tutor'
@@ -102,7 +102,7 @@ class UserModel extends User {
   User copyWith({
     String? id,
     String? email,
-    String? name,
+    String? fullName,
     UserRole? role,
     String? token,
     String? refreshToken,
@@ -111,7 +111,7 @@ class UserModel extends User {
     return UserModel(
       hiveId: id ?? hiveId,
       hiveEmail: email ?? hiveEmail,
-      hiveName: name ?? hiveName,
+      hiveName: fullName ?? hiveName,
       hashedPassword: hashedPassword,
       hiveCreatedAt: createdAt ?? hiveCreatedAt,
       hiveRole: role?.name ?? hiveRole,

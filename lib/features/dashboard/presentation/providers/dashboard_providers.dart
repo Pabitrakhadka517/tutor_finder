@@ -32,5 +32,9 @@ final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
 final dashboardNotifierProvider =
     StateNotifierProvider<DashboardNotifier, DashboardState>((ref) {
       final repository = ref.watch(dashboardRepositoryProvider);
-      return DashboardNotifier(repository: repository);
+      final remoteDataSource = ref.watch(dashboardRemoteDataSourceProvider);
+      return DashboardNotifier(
+        repository: repository,
+        remoteDataSource: remoteDataSource,
+      );
     });

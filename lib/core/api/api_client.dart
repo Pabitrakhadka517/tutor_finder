@@ -117,13 +117,27 @@ class ApiClient {
 class _AuthInterceptor extends Interceptor {
   final _storage = const FlutterSecureStorage();
 
+  /// Endpoints that do NOT need a Bearer token.
+  /// Note: /auth/logout and /auth/me DO require authentication.
+  static const _publicAuthPaths = [
+    '/auth/register',
+    '/auth/login',
+    '/auth/refresh',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+  ];
+
+  bool _isPublicAuthPath(String path) {
+    return _publicAuthPaths.any((p) => path.contains(p));
+  }
+
   @override
   void onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Skip adding token for auth endpoints
-    if (options.path.contains('/auth/')) {
+    // Only skip token for truly public auth endpoints
+    if (_isPublicAuthPath(options.path)) {
       return handler.next(options);
     }
 
@@ -140,7 +154,7 @@ class _AuthInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     // Handle 401 Unauthorized - Token expired
     if (err.response?.statusCode == 401 &&
-        !err.requestOptions.path.contains('/auth/')) {
+        !_isPublicAuthPath(err.requestOptions.path)) {
       try {
         final refreshToken = await _storage.read(key: 'refresh_token');
         if (refreshToken == null) {
@@ -151,12 +165,15 @@ class _AuthInterceptor extends Interceptor {
         final dio = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl));
         final response = await dio.post(
           ApiEndpoints.refreshToken,
-          data: {'refresh_token': refreshToken},
+          data: {'refreshToken': refreshToken},
         );
 
         if (response.statusCode == 200 && response.data != null) {
-          final newAccessToken = response.data['access_token'];
-          final newRefreshToken = response.data['refresh_token'];
+          // Backend returns accessToken / refreshToken (camelCase)
+          final newAccessToken =
+              response.data['accessToken'] ?? response.data['access_token'];
+          final newRefreshToken =
+              response.data['refreshToken'] ?? response.data['refresh_token'];
 
           if (newAccessToken != null) {
             await _storage.write(key: 'access_token', value: newAccessToken);

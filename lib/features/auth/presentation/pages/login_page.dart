@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../dashboard/presentation/pages/dashboard_page.dart';
+import '../../../dashboard/presentation/pages/role_based_dashboard_shell.dart';
 import '../providers/auth_providers.dart';
 import '../state/auth_state.dart';
 import 'register_page.dart';
@@ -32,11 +32,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
+      // Map the display role to the backend expected role format
+      final expectedRole = role.toUpperCase() == 'TUTOR' ? 'TUTOR' : 'STUDENT';
       ref
           .read(authNotifierProvider.notifier)
           .login(
             email: _emailController.text.trim(),
             password: _passwordController.text,
+            expectedRole: expectedRole,
           );
     }
   }
@@ -77,7 +80,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         );
       } else if (next.status == AuthStatus.authenticated) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const DashboardPage()),
+          MaterialPageRoute(
+            builder: (context) => const RoleBasedDashboardShell(),
+          ),
           (route) => false,
         );
       }

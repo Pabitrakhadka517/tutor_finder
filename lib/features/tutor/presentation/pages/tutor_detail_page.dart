@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../booking/presentation/pages/create_booking_page.dart';
 import '../../../review/presentation/pages/tutor_reviews_page.dart';
+import '../../../chat/presentation/pages/chat_room_page.dart';
+import '../../../chat/presentation/providers/chat_providers.dart';
 import '../providers/tutor_providers.dart';
 
 class TutorDetailPage extends ConsumerStatefulWidget {
@@ -286,6 +288,27 @@ class _TutorDetailPageState extends ConsumerState<TutorDetailPage> {
                   ),
                 ),
 
+                const SizedBox(height: 12),
+
+                // Message Tutor button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        _startChat(context, ref, tutor.id, tutor.fullName),
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: const Text('Message Tutor'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.teal,
+                      side: const BorderSide(color: Colors.teal),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 16),
 
                 // Book Now button
@@ -373,5 +396,50 @@ class _TutorDetailPageState extends ConsumerState<TutorDetailPage> {
         Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
       ],
     );
+  }
+
+  /// Create or fetch existing chat with the tutor, then navigate to ChatRoomPage
+  Future<void> _startChat(
+    BuildContext context,
+    WidgetRef ref,
+    String tutorId,
+    String tutorName,
+  ) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final chatId = await ref
+          .read(chatListNotifierProvider.notifier)
+          .createChat(tutorId);
+      if (context.mounted) {
+        Navigator.of(context).pop(); // dismiss loading
+        if (chatId != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) =>
+                  ChatRoomPage(chatId: chatId, recipientName: tutorName),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not start chat. Please try again.'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // dismiss loading
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      }
+    }
   }
 }

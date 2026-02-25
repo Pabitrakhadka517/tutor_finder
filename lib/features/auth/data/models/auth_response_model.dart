@@ -35,7 +35,11 @@ class AuthResponseModel {
           userData?['id'] ??
           userData?['_id'],
       email: json['email'] ?? userData?['email'] ?? '',
-      name: json['name'] ?? userData?['name'],
+      name:
+          json['name'] ??
+          json['fullName'] ??
+          userData?['name'] ??
+          userData?['fullName'],
       role: json['role'] ?? userData?['role'] ?? 'student',
       token: json['token'] ?? json['accessToken'] ?? json['access_token'],
       refreshToken: json['refreshToken'] ?? json['refresh_token'],
@@ -53,7 +57,7 @@ class AuthResponseModel {
     return User(
       id: userId ?? '',
       email: email,
-      name: name ?? '',
+      fullName: name ?? '',
       role: _parseRole(role),
       token: token,
       refreshToken: refreshToken,

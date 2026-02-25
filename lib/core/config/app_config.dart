@@ -14,8 +14,8 @@ class AppConfig {
 
   /// Default development config
   static const AppConfig development = AppConfig(
-    baseUrl: 'http://localhost:3000/api',
-    wsUrl: 'ws://localhost:3000',
+    baseUrl: 'http://localhost:4000/api',
+    wsUrl: 'ws://localhost:4000',
   );
 
   /// Production config — override in main.dart

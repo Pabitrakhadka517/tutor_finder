@@ -1,11 +1,12 @@
 import '../../domain/entities/dashboard_entity.dart';
+import '../../domain/entities/dashboard_stats.dart';
 
 class DashboardState {
   final bool isLoading;
   final String? errorMessage;
   final StudentDashboardEntity? studentStats;
   final TutorDashboardEntity? tutorStats;
-  final dynamic adminStats;
+  final AdminDashboardStats? adminStats;
 
   const DashboardState({
     this.isLoading = false,
@@ -20,7 +21,7 @@ class DashboardState {
     String? errorMessage,
     StudentDashboardEntity? studentStats,
     TutorDashboardEntity? tutorStats,
-    dynamic adminStats,
+    AdminDashboardStats? adminStats,
   }) {
     return DashboardState(
       isLoading: isLoading ?? this.isLoading,

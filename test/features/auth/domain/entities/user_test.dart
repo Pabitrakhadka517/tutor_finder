@@ -6,7 +6,7 @@ void main() {
     final tUser = User(
       id: '1',
       email: 'test@example.com',
-      name: 'Test User',
+      fullName: 'Test User',
       role: UserRole.student,
       token: 'token',
       refreshToken: 'refresh',
@@ -18,7 +18,7 @@ void main() {
       final tUser2 = User(
         id: '1',
         email: 'test@example.com',
-        name: 'Test User',
+        fullName: 'Test User',
         role: UserRole.student,
         token: 'token',
         refreshToken: 'refresh',
@@ -29,7 +29,7 @@ void main() {
 
     // Test 2: CopyWith
     test('copyWith should return a valid copy with updated values', () {
-      final updatedUser = tUser.copyWith(name: 'New Name');
+      final updatedUser = tUser.copyWith(fullName: 'New Name');
       expect(updatedUser.name, 'New Name');
       expect(updatedUser.email, tUser.email);
       expect(updatedUser.id, tUser.id);
@@ -40,7 +40,7 @@ void main() {
       final user = User(
         id: '2',
         email: 'email@test.com',
-        name: 'name',
+        fullName: 'name',
         createdAt: DateTime.now(),
       );
       expect(user.role, UserRole.student);

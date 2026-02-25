@@ -1,13 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/datasources/dashboard_remote_datasource.dart';
 import '../../domain/dashboard_repository.dart';
 import '../../domain/entities/dashboard_entity.dart';
 import '../state/dashboard_state.dart';
 
 class DashboardNotifier extends StateNotifier<DashboardState> {
   final DashboardRepository repository;
+  final DashboardRemoteDataSource remoteDataSource;
 
-  DashboardNotifier({required this.repository}) : super(const DashboardState());
+  DashboardNotifier({required this.repository, required this.remoteDataSource})
+    : super(const DashboardState());
 
   Future<void> fetchStudentDashboard(String studentId) async {
     state = state.copyWith(isLoading: true);
@@ -34,10 +37,15 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   }
 
   Future<void> fetchAdminDashboard() async {
-    // Admin dashboard not currently supported by repository
-    state = state.copyWith(
-      isLoading: false,
-      errorMessage: 'Admin dashboard not yet implemented',
-    );
+    state = state.copyWith(isLoading: true);
+    try {
+      final adminModel = await remoteDataSource.getAdminDashboard();
+      state = state.copyWith(isLoading: false, adminStats: adminModel);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to load admin dashboard: ${e.toString()}',
+      );
+    }
   }
 }

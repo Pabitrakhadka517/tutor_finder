@@ -21,25 +21,43 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   AuthRemoteDataSourceImpl({required ApiClient apiClient})
     : _apiClient = apiClient;
 
-  /// ========== REGISTER STUDENT ==========
+  // ─── Unified Sign-Up ──────────────────────────────────────────
+
+  /// Routes to the correct backend endpoint based on [role].
   @override
-  Future<AuthResponseModel> register({
+  Future<AuthResponseModel> signUp({
     required String email,
     required String password,
+    required String role,
   }) async {
     try {
       final requestModel = AuthRequestModel(email: email, password: password);
 
+      // Pick the right endpoint based on role
+      final String endpoint;
+      switch (role.toLowerCase()) {
+        case 'tutor':
+          endpoint = ApiEndpoints.registerTutor;
+          break;
+        case 'admin':
+          endpoint = ApiEndpoints.registerAdmin;
+          break;
+        case 'student':
+        default:
+          endpoint = ApiEndpoints.register;
+          break;
+      }
+
       final response = await _apiClient.post(
-        ApiEndpoints.register,
+        endpoint,
         data: requestModel.toJson(),
       );
 
       final authResponse = AuthResponseModel.fromJson(response.data);
 
-      // Save token if returned
       if (authResponse.token != null) {
         await _saveTokens(authResponse.token!, authResponse.refreshToken);
+        await _saveUserData(authResponse);
       }
 
       return authResponse;
@@ -47,67 +65,43 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw _handleDioError(e);
     }
   }
+
+  // ─── Legacy per-role methods (delegates to signUp) ────────────
+
+  /// ========== REGISTER STUDENT ==========
+  @override
+  Future<AuthResponseModel> register({
+    required String email,
+    required String password,
+  }) => signUp(email: email, password: password, role: 'student');
 
   /// ========== REGISTER ADMIN ==========
   @override
   Future<AuthResponseModel> registerAdmin({
     required String email,
     required String password,
-  }) async {
-    try {
-      final requestModel = AuthRequestModel(email: email, password: password);
-
-      final response = await _apiClient.post(
-        ApiEndpoints.registerAdmin,
-        data: requestModel.toJson(),
-      );
-
-      final authResponse = AuthResponseModel.fromJson(response.data);
-
-      if (authResponse.token != null) {
-        await _saveTokens(authResponse.token!, authResponse.refreshToken);
-      }
-
-      return authResponse;
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    }
-  }
+  }) => signUp(email: email, password: password, role: 'admin');
 
   /// ========== REGISTER TUTOR ==========
   @override
   Future<AuthResponseModel> registerTutor({
     required String email,
     required String password,
-  }) async {
-    try {
-      final requestModel = AuthRequestModel(email: email, password: password);
-
-      final response = await _apiClient.post(
-        ApiEndpoints.registerTutor,
-        data: requestModel.toJson(),
-      );
-
-      final authResponse = AuthResponseModel.fromJson(response.data);
-
-      if (authResponse.token != null) {
-        await _saveTokens(authResponse.token!, authResponse.refreshToken);
-      }
-
-      return authResponse;
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    }
-  }
+  }) => signUp(email: email, password: password, role: 'tutor');
 
   /// ========== LOGIN ==========
   @override
   Future<AuthResponseModel> login({
     required String email,
     required String password,
+    String? expectedRole,
   }) async {
     try {
-      final requestModel = AuthRequestModel(email: email, password: password);
+      final requestModel = AuthRequestModel(
+        email: email,
+        password: password,
+        expectedRole: expectedRole,
+      );
 
       final response = await _apiClient.post(
         ApiEndpoints.login,
