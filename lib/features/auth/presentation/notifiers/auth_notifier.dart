@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/usecases/usecase.dart';
+import '../../data/models/forgot_password_response.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/check_auth_status_usecase.dart';
@@ -160,17 +161,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
   // PASSWORD RESET
   // ═══════════════════════════════════════════════════════════════
 
-  Future<bool> forgotPassword(String email) async {
+  /// Returns [ForgotPasswordResponse] on success (may contain dev links),
+  /// or `null` on failure.
+  Future<ForgotPasswordResponse?> forgotPassword(String email) async {
     state = const AuthState.loading();
     final result = await authRepository.forgotPassword(email);
     return result.fold(
       (failure) {
         state = AuthState.error(failure.message);
-        return false;
+        return null;
       },
-      (_) {
+      (response) {
         state = const AuthState.unauthenticated();
-        return true;
+        return response;
       },
     );
   }

@@ -6,6 +6,7 @@ import '../../../../../core/api/api_client.dart';
 import '../../../../../core/api/api_endpoints.dart';
 import '../../models/auth_request_model.dart';
 import '../../models/auth_response_model.dart';
+import '../../models/forgot_password_response.dart';
 import '../auth_remote_datasource.dart';
 
 final authRemoteDatasourceProvider = Provider<AuthRemoteDataSourceImpl>((ref) {
@@ -156,11 +157,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   /// ========== FORGOT PASSWORD ==========
   @override
-  Future<void> forgotPassword(String email) async {
+  Future<ForgotPasswordResponse> forgotPassword(String email) async {
     try {
-      await _apiClient.post(
+      final response = await _apiClient.post(
         ApiEndpoints.forgotPassword,
         data: {'email': email},
+      );
+      return ForgotPasswordResponse.fromJson(
+        response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : <String, dynamic>{},
       );
     } on DioException catch (e) {
       throw _handleDioError(e);

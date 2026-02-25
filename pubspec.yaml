@@ -78,6 +78,12 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   image_picker: ^1.2.1
   
+  # URL launching
+  url_launcher: ^6.2.5
+
+  # Deep linking / app links (password reset from email)
+  app_links: ^6.3.3
+  
   # Date formatting
   intl: ^0.19.0
   

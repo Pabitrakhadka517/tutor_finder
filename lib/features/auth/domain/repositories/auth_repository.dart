@@ -1,5 +1,6 @@
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/either.dart';
+import '../../data/models/forgot_password_response.dart';
 import '../entities/user.dart';
 
 /// Repository interface for authentication.
@@ -61,7 +62,8 @@ abstract class AuthRepository {
 
   // ─── Password Reset ───────────────────────────────────────────────
   /// Request a password-reset email.
-  Future<Either<Failure, void>> forgotPassword(String email);
+  /// Returns [ForgotPasswordResponse] which may contain dev-mode links.
+  Future<Either<Failure, ForgotPasswordResponse>> forgotPassword(String email);
 
   /// Reset password using the token delivered via email.
   Future<Either<Failure, void>> resetPassword({

@@ -1,4 +1,5 @@
 import '../models/auth_response_model.dart';
+import '../models/forgot_password_response.dart';
 
 /// Remote data source interface for authentication.
 ///
@@ -46,7 +47,9 @@ abstract class AuthRemoteDataSource {
   Future<bool> logout();
 
   // ─── Password Reset ────────────────────────────────────────────
-  Future<void> forgotPassword(String email);
+  /// Request a password-reset email.
+  /// Returns [ForgotPasswordResponse] which may contain dev-mode links.
+  Future<ForgotPasswordResponse> forgotPassword(String email);
 
   Future<void> resetPassword({
     required String token,

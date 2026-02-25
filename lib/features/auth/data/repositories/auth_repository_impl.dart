@@ -6,6 +6,7 @@ import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
 import '../datasources/local/auth_local_datasource.dart';
+import '../models/forgot_password_response.dart';
 
 /// Implementation of [AuthRepository].
 ///
@@ -198,10 +199,12 @@ class AuthRepositoryImpl implements AuthRepository {
   // ═══════════════════════════════════════════════════════════════
 
   @override
-  Future<Either<Failure, void>> forgotPassword(String email) async {
+  Future<Either<Failure, ForgotPasswordResponse>> forgotPassword(
+    String email,
+  ) async {
     try {
-      await remoteDataSource.forgotPassword(email);
-      return Either.right(null);
+      final response = await remoteDataSource.forgotPassword(email);
+      return Either.right(response);
     } catch (e) {
       return Either.left(
         AuthFailure(e.toString().replaceAll('Exception: ', '')),

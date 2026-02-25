@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_providers.dart';
+import 'reset_password_page.dart';
 
-/// Forgot Password Page - sends reset email, then shows token + new password form
+/// Step 1 of password reset: enter email to request a reset token.
+///
+/// On success:
+/// - **Dev mode** (backend returns token): navigates straight to
+///   [ResetPasswordPage] with the token auto-filled.
+/// - **Production**: shows a "check your email" confirmation and a
+///   button to manually proceed to [ResetPasswordPage].
 class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
 
@@ -10,31 +17,23 @@ class ForgotPasswordPage extends ConsumerStatefulWidget {
   ConsumerState<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-// Keep the old name as a typedef for backward compatibility
+// Backward-compat alias
 typedef ForgotPasswordScreen = ForgotPasswordPage;
 
 class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _tokenController = TextEditingController();
-  final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final _resetFormKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
   bool _emailSent = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
-    _tokenController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
+
+  // --- UI ---
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +45,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Back Button
+              // Back
               IconButton(
                 icon: const Icon(Icons.arrow_back),
                 color: Colors.blue.shade700,
@@ -56,24 +55,23 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
               // Title
               Text(
-                _emailSent ? "Reset Password" : "Forgot Password",
+                _emailSent ? "Check Your Email" : "Forgot Password",
                 style: TextStyle(
-                  fontSize: 32,
+                  fontSize: 30,
                   fontWeight: FontWeight.bold,
                   color: Colors.blue.shade900,
                 ),
               ),
               const SizedBox(height: 8),
-
               Text(
                 _emailSent
-                    ? "Enter the reset code from your email and set a new password."
-                    : "Enter your email to receive a password reset code.",
+                    ? "We sent a password reset link to your email."
+                    : "Enter your email address and we will send you a link to reset your password.",
                 style: TextStyle(fontSize: 16, color: Colors.blue.shade700),
               ),
               const SizedBox(height: 30),
 
-              // Form Card
+              // Card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -87,7 +85,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                     ),
                   ],
                 ),
-                child: _emailSent ? _buildResetForm() : _buildEmailForm(),
+                child: _emailSent
+                    ? _buildEmailSentView()
+                    : _buildEmailForm(),
               ),
             ],
           ),
@@ -95,6 +95,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       ),
     );
   }
+
+  // --- Email form ---
 
   Widget _buildEmailForm() {
     return Form(
@@ -123,9 +125,12 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty)
+              if (value == null || value.trim().isEmpty) {
                 return "Please enter your email";
-              if (!value.contains("@")) return "Enter a valid email";
+              }
+              if (!value.contains("@")) {
+                return "Enter a valid email";
+              }
               return null;
             },
           ),
@@ -134,17 +139,25 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             width: double.infinity,
             height: 55,
             child: ElevatedButton(
-              onPressed: _isLoading ? null : _sendResetLink,
+              onPressed: _isLoading ? null : _sendResetEmail,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue.shade700,
+                disabledBackgroundColor: Colors.blue.shade300,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text(
-                      "Send Reset Code",
+                      "Send Reset Link",
                       style: TextStyle(
                         fontSize: 18,
                         color: Colors.white,
@@ -158,249 +171,200 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     );
   }
 
-  Widget _buildResetForm() {
-    return Form(
-      key: _resetFormKey,
-      child: Column(
-        children: [
-          // Success indicator
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.green.shade700),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "Reset code sent to ${_emailController.text}",
-                    style: TextStyle(
-                      color: Colors.green.shade700,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
+  // --- "Email sent" confirmation (shown only in production) ---
 
-          // Reset Token field
-          TextFormField(
-            controller: _tokenController,
-            decoration: InputDecoration(
-              labelText: "Reset Code",
-              prefixIcon: Icon(Icons.vpn_key, color: Colors.blue.shade700),
-              filled: true,
-              fillColor: Colors.blue.shade50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 18,
-              ),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty)
-                return "Please enter the reset code";
-              return null;
-            },
+  Widget _buildEmailSentView() {
+    return Column(
+      children: [
+        // Success icon
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 16),
+          child: Icon(Icons.mark_email_read, color: Colors.green.shade600, size: 56),
+        ),
+        const SizedBox(height: 20),
 
-          // New Password field
-          TextFormField(
-            controller: _newPasswordController,
-            obscureText: _obscurePassword,
-            decoration: InputDecoration(
-              labelText: "New Password",
-              prefixIcon: Icon(Icons.lock, color: Colors.blue.shade700),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.grey,
-                ),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
-              ),
-              filled: true,
-              fillColor: Colors.blue.shade50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 18,
-              ),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty)
-                return "Please enter a new password";
-              if (value.length < 6)
-                return "Password must be at least 6 characters";
-              return null;
-            },
+        Text(
+          "Reset link sent to:",
+          style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _emailController.text,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue.shade800,
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 20),
 
-          // Confirm Password field
-          TextFormField(
-            controller: _confirmPasswordController,
-            obscureText: _obscureConfirmPassword,
-            decoration: InputDecoration(
-              labelText: "Confirm Password",
-              prefixIcon: Icon(Icons.lock_outline, color: Colors.blue.shade700),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureConfirmPassword
-                      ? Icons.visibility_off
-                      : Icons.visibility,
-                  color: Colors.grey,
-                ),
-                onPressed: () => setState(
-                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
+        // Instructions
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _instructionStep("1", "Open your email inbox"),
+              const SizedBox(height: 8),
+              _instructionStep("2", "Click the reset link in the email"),
+              const SizedBox(height: 8),
+              _instructionStep("3", "Or copy the token and enter it below"),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Expiry warning
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.timer, color: Colors.orange.shade700, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Link expires in 15 minutes.",
+                  style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
                 ),
               ),
-              filled: true,
-              fillColor: Colors.blue.shade50,
-              border: OutlineInputBorder(
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // CTA: go to reset password page
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            onPressed: () => _navigateToResetPage(null),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue.shade700,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 18,
               ),
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty)
-                return "Please confirm your password";
-              if (value != _newPasswordController.text)
-                return "Passwords do not match";
-              return null;
-            },
-          ),
-          const SizedBox(height: 30),
-
-          // Reset Button
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _resetPassword,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue.shade700,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            child: const Text(
+              "I Have My Token",
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
-              child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      "Reset Password",
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
             ),
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 12),
 
-          // Resend code
-          TextButton(
-            onPressed: _isLoading ? null : _sendResetLink,
+        // Resend
+        TextButton(
+          onPressed: _isLoading ? null : _sendResetEmail,
+          child: Text(
+            "Didn't receive the email? Resend",
+            style: TextStyle(color: Colors.blue.shade700),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _instructionStep(String num, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: Colors.blue.shade700,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
             child: Text(
-              "Didn't receive the code? Resend",
-              style: TextStyle(color: Colors.blue.shade700),
+              num,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  // Handle send reset link
-  Future<void> _sendResetLink() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+  // --- Actions ---
 
-      final success = await ref
-          .read(authNotifierProvider.notifier)
-          .forgotPassword(_emailController.text.trim());
+  Future<void> _sendResetEmail() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+    setState(() => _isLoading = true);
 
-      if (success) {
-        setState(() => _emailSent = true);
+    final response = await ref
+        .read(authNotifierProvider.notifier)
+        .forgotPassword(_emailController.text.trim());
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (response != null) {
+      // Extract token from dev response if available
+      final token = response.resetToken;
+
+      if (token != null && token.isNotEmpty) {
+        // Dev mode: backend returned the token -> go straight to reset page
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Reset code sent to ${_emailController.text}"),
-            backgroundColor: Colors.green,
+            content: const Text("Reset token received. Enter your new password."),
+            backgroundColor: Colors.green.shade600,
           ),
         );
+        _navigateToResetPage(token);
       } else {
-        final errorMsg =
-            ref.read(authNotifierProvider).errorMessage ??
-            'Failed to send reset link';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
-        );
+        // Production: show "check your email" screen
+        setState(() => _emailSent = true);
       }
+    } else {
+      final errorMsg =
+          ref.read(authNotifierProvider).errorMessage ??
+          'Failed to send reset link. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+      );
     }
   }
 
-  // Handle password reset
-  Future<void> _resetPassword() async {
-    if (_resetFormKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-
-      final success = await ref
-          .read(authNotifierProvider.notifier)
-          .resetPassword(
-            token: _tokenController.text.trim(),
-            newPassword: _newPasswordController.text,
-          );
-
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Password reset successful! Please login."),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
-      } else {
-        final errorMsg =
-            ref.read(authNotifierProvider).errorMessage ??
-            'Failed to reset password';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
-        );
-      }
-    }
+  void _navigateToResetPage(String? token) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResetPasswordPage(token: token),
+        settings: const RouteSettings(name: '/reset-password'),
+      ),
+    );
   }
 }

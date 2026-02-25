@@ -5,7 +5,7 @@ import '../../features/role_selection/presentation/pages/role_selection_page.dar
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
-import '../../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../../features/auth/presentation/pages/reset_password_page.dart';
 import '../../features/dashboard/presentation/pages/role_based_dashboard_shell.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
@@ -38,6 +38,7 @@ class AppRoutes {
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
   static const String dashboard = '/dashboard';
   static const String profile = '/profile';
   static const String editProfile = '/profile/edit';
@@ -82,6 +83,12 @@ class AppRoutes {
         );
       case forgotPassword:
         return _buildRoute(const ForgotPasswordPage(), settings);
+      case resetPassword:
+        final resetArgs = settings.arguments as Map<String, dynamic>?;
+        return _buildRoute(
+          ResetPasswordPage(token: resetArgs?['token'] as String?),
+          settings,
+        );
       case dashboard:
         return _buildRoute(const RoleBasedDashboardShell(), settings);
       case profile:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutor_finder/app/theme/theme.dart';
 import 'package:tutor_finder/app/routes/app_routes.dart';
+import '../core/services/deep_link_service.dart';
 import '../features/auth/presentation/widgets/auth_wrapper.dart';
 
 /// Root application widget.
@@ -14,6 +15,10 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final navigatorKey = ref.watch(navigatorKeyProvider);
+
+    // Initialise deep link listener (idempotent – only binds once)
+    ref.read(deepLinkServiceProvider).init();
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -21,6 +26,7 @@ class MyApp extends ConsumerWidget {
       theme: getAppTheme(),
       darkTheme: getDarkTheme(),
       themeMode: themeMode,
+      navigatorKey: navigatorKey,
       onGenerateRoute: AppRoutes.generateRoute,
       home: const AuthWrapper(),
     );
