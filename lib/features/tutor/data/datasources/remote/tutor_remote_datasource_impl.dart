@@ -11,6 +11,29 @@ class TutorRemoteDataSourceImpl implements TutorRemoteDataSource {
 
   TutorRemoteDataSourceImpl({required this.apiClient});
 
+  List<dynamic> _extractSlots(dynamic data) {
+    if (data is List) {
+      return data;
+    }
+
+    if (data is Map<String, dynamic>) {
+      final directSlots = data['slots'];
+      if (directSlots is List) {
+        return directSlots;
+      }
+
+      final nestedData = data['data'];
+      if (nestedData is Map<String, dynamic>) {
+        final nestedSlots = nestedData['slots'];
+        if (nestedSlots is List) {
+          return nestedSlots;
+        }
+      }
+    }
+
+    return const [];
+  }
+
   @override
   Future<List<TutorModel>> getTutors({
     int page = 1,
@@ -77,7 +100,7 @@ class TutorRemoteDataSourceImpl implements TutorRemoteDataSource {
       );
 
       final data = response.data;
-      final slotsJson = data['slots'] as List? ?? [];
+      final slotsJson = _extractSlots(data);
       return slotsJson
           .map(
             (json) =>
@@ -87,6 +110,41 @@ class TutorRemoteDataSourceImpl implements TutorRemoteDataSource {
     } on DioException catch (e) {
       throw Exception(
         e.response?.data?['message'] ?? 'Failed to fetch availability',
+      );
+    }
+  }
+
+  @override
+  Future<List<AvailabilitySlotModel>> getTutorAvailability(
+    String tutorId, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) {
+        queryParams['startDate'] = startDate.toIso8601String();
+      }
+      if (endDate != null) {
+        queryParams['endDate'] = endDate.toIso8601String();
+      }
+
+      final response = await apiClient.get(
+        ApiEndpoints.tutorAvailability(tutorId),
+        queryParameters: queryParams,
+      );
+
+      final data = response.data;
+      final slotsJson = _extractSlots(data);
+      return slotsJson
+          .map(
+            (json) =>
+                AvailabilitySlotModel.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data?['message'] ?? 'Failed to fetch tutor availability',
       );
     }
   }

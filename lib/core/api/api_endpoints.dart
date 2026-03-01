@@ -58,6 +58,7 @@ class ApiEndpoints {
   static const String tutors = '/api/tutors';
   static String tutorById(String id) => '/api/tutors/$id';
   static const String myAvailability = '/api/tutors/my/availability';
+  static String tutorAvailability(String id) => '/api/tutors/$id/availability';
   static const String submitVerification = '/api/tutors/my/verify/submit';
 
   // ================= Booking Endpoints =================
@@ -83,6 +84,11 @@ class ApiEndpoints {
   static const String receivedTransactions =
       '/api/transactions/transactions/received';
 
+  // ================= Payment (Booking) Endpoints =================
+  static const String paymentInitBooking = '/api/payment/init-booking';
+  static const String paymentVerify = '/api/payment/verify';
+  static const String paymentHistory = '/api/payment/history';
+
   // ================= Review Endpoints =================
   static String createReview(String bookingId) => '/api/reviews/$bookingId';
   static String tutorReviews(String tutorId) => '/api/reviews/tutor/$tutorId';
@@ -102,6 +108,7 @@ class ApiEndpoints {
 
   // ================= Study Resources Endpoints =================
   static const String studyResources = '/api/study';
+  static const String studyUpload = '/api/study/upload';
   static const String myStudyResources = '/api/study/my';
   static String deleteStudyResource(String id) => '/api/study/$id';
 

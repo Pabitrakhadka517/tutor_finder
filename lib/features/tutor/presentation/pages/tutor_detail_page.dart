@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../booking/presentation/pages/create_booking_page.dart';
 import '../../../review/presentation/pages/tutor_reviews_page.dart';
 import '../../../chat/presentation/pages/chat_room_page.dart';
 import '../../../chat/presentation/providers/chat_providers.dart';
+import '../../domain/entities/availability_slot_entity.dart';
 import '../providers/tutor_providers.dart';
 
 class TutorDetailPage extends ConsumerStatefulWidget {
@@ -16,14 +18,33 @@ class TutorDetailPage extends ConsumerStatefulWidget {
 }
 
 class _TutorDetailPageState extends ConsumerState<TutorDetailPage> {
+  List<AvailabilitySlotEntity> _availableSlots = [];
+  bool _isLoadingSlots = false;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => ref
-          .read(tutorDetailNotifierProvider.notifier)
-          .fetchTutor(widget.tutorId),
-    );
+    Future.microtask(() {
+      ref.read(tutorDetailNotifierProvider.notifier).fetchTutor(widget.tutorId);
+      _loadAvailability();
+    });
+  }
+
+  Future<void> _loadAvailability() async {
+    setState(() => _isLoadingSlots = true);
+    final repo = ref.read(tutorRepositoryProvider);
+    final result = await repo.getTutorAvailability(widget.tutorId);
+    if (!mounted) return;
+    result.fold((_) => setState(() => _isLoadingSlots = false), (slots) {
+      final now = DateTime.now();
+      final available =
+          slots.where((s) => !s.isBooked && s.startTime.isAfter(now)).toList()
+            ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      setState(() {
+        _isLoadingSlots = false;
+        _availableSlots = available;
+      });
+    });
   }
 
   @override
@@ -308,6 +329,106 @@ class _TutorDetailPageState extends ConsumerState<TutorDetailPage> {
                     ),
                   ),
                 ),
+
+                const SizedBox(height: 16),
+
+                // Availability section
+                _sectionTitle('Available Slots'),
+                const SizedBox(height: 8),
+                if (_isLoadingSlots)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                else if (_availableSlots.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          color: Colors.orange.shade400,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'No available slots. Message the tutor to arrange a time.',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ..._availableSlots.take(5).map((slot) {
+                          final dateFormat = DateFormat('EEE, MMM d');
+                          final timeFormat = DateFormat('hh:mm a');
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.event_available,
+                                  color: Colors.green,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  dateFormat.format(slot.startTime),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${timeFormat.format(slot.startTime)} - ${timeFormat.format(slot.endTime)}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                        if (_availableSlots.length > 5)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              '+${_availableSlots.length - 5} more slots',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
 
                 const SizedBox(height: 16),
 

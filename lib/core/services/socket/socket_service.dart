@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:dio/dio.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../../api/api_endpoints.dart';
 import '../../constants/app_constants.dart';
+import '../../utils/jwt_decoder.dart';
 
 /// Provider for the SocketService singleton
 final socketServiceProvider = Provider<SocketService>((ref) {
@@ -24,7 +26,7 @@ class SocketService {
   Future<void> connect() async {
     if (_isConnected && _socket != null) return;
 
-    final token = await _storage.read(key: AppConstants.accessTokenKey);
+    final token = await _getValidAccessToken();
     if (token == null) {
       debugPrint('SocketService: No auth token, cannot connect');
       return;
@@ -38,6 +40,7 @@ class SocketService {
       io.OptionBuilder()
           .setTransports(['websocket'])
           .setAuth({'token': token})
+          .setExtraHeaders({'Authorization': 'Bearer $token'})
           .disableAutoConnect()
           .enableReconnection()
           .setReconnectionAttempts(5)
@@ -65,6 +68,93 @@ class SocketService {
     });
 
     _socket!.connect();
+  }
+
+  Future<String?> _getValidAccessToken() async {
+    final storedAccessToken = await _storage.read(
+      key: AppConstants.accessTokenKey,
+    );
+    final accessToken = _normalizeToken(storedAccessToken);
+
+    if (accessToken == null) return null;
+    if (!JwtDecoder.isExpired(accessToken)) return accessToken;
+
+    debugPrint('SocketService: Access token expired, attempting refresh');
+    final storedRefreshToken = await _storage.read(
+      key: AppConstants.refreshTokenKey,
+    );
+    final refreshToken = _normalizeToken(storedRefreshToken);
+
+    if (refreshToken == null) {
+      debugPrint('SocketService: No refresh token available for socket auth');
+      return null;
+    }
+
+    return _refreshAccessToken(refreshToken);
+  }
+
+  Future<String?> _refreshAccessToken(String refreshToken) async {
+    try {
+      final dio = Dio(
+        BaseOptions(
+          baseUrl: ApiEndpoints.baseUrl,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          connectTimeout: ApiEndpoints.connectionTimeout,
+          receiveTimeout: ApiEndpoints.receiveTimeout,
+        ),
+      );
+
+      final response = await dio.post(
+        ApiEndpoints.refreshToken,
+        data: {'refreshToken': refreshToken},
+      );
+
+      final data = response.data;
+      if (data is! Map) return null;
+
+      final refreshedAccessToken = _normalizeToken(
+        (data['accessToken'] ?? data['access_token'] ?? data['token'])
+            as String?,
+      );
+      final refreshedRefreshToken = _normalizeToken(
+        (data['refreshToken'] ?? data['refresh_token']) as String?,
+      );
+
+      if (refreshedAccessToken == null) return null;
+
+      await _storage.write(
+        key: AppConstants.accessTokenKey,
+        value: refreshedAccessToken,
+      );
+
+      if (refreshedRefreshToken != null) {
+        await _storage.write(
+          key: AppConstants.refreshTokenKey,
+          value: refreshedRefreshToken,
+        );
+      }
+
+      debugPrint('SocketService: Access token refreshed for socket auth');
+      return refreshedAccessToken;
+    } catch (error) {
+      debugPrint(
+        'SocketService: Failed to refresh token for socket auth: $error',
+      );
+      return null;
+    }
+  }
+
+  String? _normalizeToken(String? token) {
+    if (token == null) return null;
+    final value = token.trim();
+    if (value.isEmpty) return null;
+    if (value.toLowerCase().startsWith('bearer ')) {
+      return value.substring(7).trim();
+    }
+    return value;
   }
 
   /// Disconnect from socket server

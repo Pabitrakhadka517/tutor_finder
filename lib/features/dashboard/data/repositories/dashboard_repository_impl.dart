@@ -209,8 +209,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
       totalReviews: 0,
       teachingSubjects: const [],
       verificationStatus: _mapVerificationStatus(model.verificationStatus),
-      recentBookings: const [], // TODO: parse from model when needed
-      recentTransactions: const [], // TODO: parse from model when needed
+      recentBookings: model.parseRecentBookings(),
+      recentTransactions: model.parseRecentTransactions(),
       lastUpdated: now,
       createdAt: now,
     );

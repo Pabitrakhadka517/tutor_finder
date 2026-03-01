@@ -22,6 +22,13 @@ abstract class TutorRemoteDataSource {
     DateTime? endDate,
   });
 
+  /// Get a specific tutor's availability slots (for students)
+  Future<List<AvailabilitySlotModel>> getTutorAvailability(
+    String tutorId, {
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+
   /// Set availability slots (for tutor role)
   Future<void> setAvailability(List<AvailabilitySlotModel> slots);
 

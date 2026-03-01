@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/api/api_endpoints.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../providers/transaction_providers.dart';
 
@@ -147,9 +146,8 @@ class _TransactionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = isSent
-        ? (transaction.receiverName ?? 'Tutor')
-        : (transaction.senderName ?? 'Student');
-    final image = isSent ? transaction.receiverImage : transaction.senderImage;
+        ? 'Tutor ${transaction.tutorId.isNotEmpty ? transaction.tutorId : ''}'
+        : 'Student Payment';
     final dateStr = DateFormat(
       'MMM dd, yyyy • hh:mm a',
     ).format(transaction.createdAt.toLocal());
@@ -181,15 +179,10 @@ class _TransactionCard extends StatelessWidget {
             // Avatar
             CircleAvatar(
               radius: 24,
-              backgroundImage: image != null
-                  ? NetworkImage(ApiEndpoints.getImageUrl(image) ?? '')
-                  : null,
-              child: image == null
-                  ? Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: const TextStyle(fontSize: 20),
-                    )
-                  : null,
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                style: const TextStyle(fontSize: 20),
+              ),
             ),
             const SizedBox(width: 12),
 
@@ -210,13 +203,11 @@ class _TransactionCard extends StatelessWidget {
                     dateStr,
                     style: TextStyle(color: Colors.grey[500], fontSize: 12),
                   ),
-                  if (transaction.bookingStartTime != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      'Session: ${DateFormat('MMM dd').format(transaction.bookingStartTime!)}',
-                      style: TextStyle(color: Colors.grey[400], fontSize: 11),
-                    ),
-                  ],
+                  const SizedBox(height: 2),
+                  Text(
+                    'Booking: ${transaction.bookingId}',
+                    style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                  ),
                 ],
               ),
             ),

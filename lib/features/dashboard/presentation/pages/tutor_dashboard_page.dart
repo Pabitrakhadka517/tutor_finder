@@ -511,9 +511,11 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildPendingRequests(dynamic stats) {
     final recentBookings = stats?.recentBookings ?? [];
-    final pendingBookings = recentBookings
-        .where((b) => b.status.name.toLowerCase() == 'pending')
-        .toList();
+    final pendingBookings = recentBookings.where((b) {
+      final status = b.status;
+      final statusText = status.toString().split('.').last.toLowerCase().trim();
+      return statusText == 'pending';
+    }).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),

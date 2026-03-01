@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../app/routes/app_routes.dart';
 import '../../domain/entities/booking_entity.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../transaction/presentation/pages/payment_page.dart';
 import '../../../review/presentation/pages/create_review_page.dart';
 import '../providers/booking_providers.dart';
 
@@ -437,14 +437,13 @@ class _BookingCard extends ConsumerWidget {
             icon: Icons.payment,
             color: Colors.purple,
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => PaymentPage(
-                    bookingId: booking.id,
-                    tutorName: booking.tutorName ?? 'Tutor',
-                    price: booking.price,
-                  ),
-                ),
+              Navigator.of(context).pushNamed(
+                AppRoutes.payment,
+                arguments: {
+                  'bookingId': booking.id,
+                  'tutorName': booking.tutorName ?? 'Tutor',
+                  'price': booking.price,
+                },
               );
             },
           ),

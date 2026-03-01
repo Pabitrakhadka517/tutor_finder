@@ -69,6 +69,26 @@ class TutorRepositoryImpl implements TutorRepository {
   }
 
   @override
+  Future<Either<Failure, List<AvailabilitySlotEntity>>> getTutorAvailability(
+    String tutorId, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final slots = await remoteDataSource.getTutorAvailability(
+        tutorId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+      return Either.right(slots);
+    } catch (e) {
+      return Either.left(
+        ServerFailure(e.toString().replaceAll('Exception: ', '')),
+      );
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> setAvailability(
     List<AvailabilitySlotEntity> slots,
   ) async {

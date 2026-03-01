@@ -2,49 +2,23 @@ import 'package:equatable/equatable.dart';
 
 class TransactionEntity extends Equatable {
   final String id;
-  final String? jobId;
-  final String? bookingId;
-  final String senderId;
-  final String receiverId;
-  final String? senderName;
-  final String? receiverName;
-  final String? senderEmail;
-  final String? receiverEmail;
-  final String? senderImage;
-  final String? receiverImage;
+  final String bookingId;
+  final String tutorId;
   final double amount;
-  final double commission;
-  final double receiverAmount;
-  final String productCode;
-  final String transactionUuid;
-  final String? transactionCode;
-  final String status; // pending, done/completed, failed
-  final DateTime? bookingStartTime;
+  final String transactionId;
+  final String status;
+  final String paymentMethod;
   final DateTime createdAt;
-  final DateTime updatedAt;
 
   const TransactionEntity({
     required this.id,
-    this.jobId,
-    this.bookingId,
-    required this.senderId,
-    required this.receiverId,
-    this.senderName,
-    this.receiverName,
-    this.senderEmail,
-    this.receiverEmail,
-    this.senderImage,
-    this.receiverImage,
+    required this.bookingId,
+    required this.tutorId,
     required this.amount,
-    this.commission = 0,
-    this.receiverAmount = 0,
-    required this.productCode,
-    required this.transactionUuid,
-    this.transactionCode,
+    required this.transactionId,
     required this.status,
-    this.bookingStartTime,
+    required this.paymentMethod,
     required this.createdAt,
-    required this.updatedAt,
   });
 
   bool get isPending => status == 'pending';
@@ -52,27 +26,58 @@ class TransactionEntity extends Equatable {
   bool get isFailed => status == 'failed';
 
   @override
-  List<Object?> get props => [id, status, amount, transactionUuid];
+  List<Object?> get props => [
+    id,
+    bookingId,
+    tutorId,
+    amount,
+    transactionId,
+    status,
+    paymentMethod,
+    createdAt,
+  ];
 }
 
 /// Payment init details returned from backend for eSewa
 class PaymentInitEntity extends Equatable {
   final String transactionId;
+  final String bookingId;
+  final String tutorId;
   final double amount;
   final String productCode;
   final String transactionUuid;
+  final String signedFieldNames;
+  final String signature;
   final String successUrl;
   final String failureUrl;
+  final String paymentMethod;
 
   const PaymentInitEntity({
     required this.transactionId,
+    required this.bookingId,
+    required this.tutorId,
     required this.amount,
     required this.productCode,
     required this.transactionUuid,
+    required this.signedFieldNames,
+    required this.signature,
     required this.successUrl,
     required this.failureUrl,
+    this.paymentMethod = 'eSewa',
   });
 
   @override
-  List<Object?> get props => [transactionId, transactionUuid, amount];
+  List<Object?> get props => [
+    transactionId,
+    bookingId,
+    tutorId,
+    transactionUuid,
+    amount,
+    productCode,
+    signedFieldNames,
+    signature,
+    successUrl,
+    failureUrl,
+    paymentMethod,
+  ];
 }

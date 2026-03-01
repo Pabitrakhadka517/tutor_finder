@@ -18,6 +18,8 @@ import '../../features/chat/presentation/pages/chat_room_page.dart';
 import '../../features/notification/presentation/pages/notification_page.dart';
 import '../../features/transaction/presentation/pages/transaction_history_page.dart';
 import '../../features/transaction/presentation/pages/payment_page.dart';
+import '../../features/transaction/presentation/pages/payment_success_page.dart';
+import '../../features/transaction/presentation/pages/payment_failure_page.dart';
 import '../../features/review/presentation/pages/tutor_reviews_page.dart';
 import '../../features/review/presentation/pages/create_review_page.dart';
 import '../../features/study/presentation/pages/study_resources_page.dart';
@@ -51,6 +53,8 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String transactionHistory = '/transactions';
   static const String payment = '/payment';
+  static const String paymentSuccess = '/payment/success';
+  static const String paymentFailure = '/payment/failure';
   static const String tutorReviews = '/reviews/tutor';
   static const String createReview = '/reviews/create';
   static const String studyResources = '/study';
@@ -127,6 +131,26 @@ class AppRoutes {
             bookingId: args['bookingId'],
             tutorName: args['tutorName'],
             price: args['price'],
+          ),
+          settings,
+        );
+      case paymentSuccess:
+        final args = settings.arguments as Map<String, dynamic>;
+        return _buildRoute(
+          PaymentSuccessPage(
+            bookingId: args['bookingId'] ?? '',
+            tutorName: args['tutorName'] ?? 'Tutor',
+            amount: (args['amount'] is num)
+                ? (args['amount'] as num).toDouble()
+                : 0,
+          ),
+          settings,
+        );
+      case paymentFailure:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return _buildRoute(
+          PaymentFailurePage(
+            message: args?['message'] ?? 'Payment failed. Please try again.',
           ),
           settings,
         );

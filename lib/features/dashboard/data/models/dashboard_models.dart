@@ -162,6 +162,62 @@ class TutorDashboardModel extends TutorDashboardStats {
           .toList(),
     );
   }
+
+  /// Parse raw booking JSON into [RecentBookingEntity] list
+  List<RecentBookingEntity> parseRecentBookings() {
+    return rawRecentBookings.map((b) {
+      String studentId = '';
+      String studentName = '';
+      if (b['student'] is Map) {
+        final s = b['student'] as Map<String, dynamic>;
+        studentId = s['_id']?.toString() ?? s['id']?.toString() ?? '';
+        studentName = s['fullName']?.toString() ?? s['name']?.toString() ?? '';
+      } else {
+        studentId = b['student']?.toString() ?? '';
+      }
+
+      return RecentBookingEntity(
+        id: b['_id']?.toString() ?? b['id']?.toString() ?? '',
+        studentId: studentName.isNotEmpty ? studentName : studentId,
+        tutorId: b['tutor']?.toString() ?? '',
+        subject:
+            b['subject']?.toString() ?? b['title']?.toString() ?? 'Session',
+        scheduledDate:
+            DateTime.tryParse(
+              b['startTime']?.toString() ??
+                  b['scheduledDate']?.toString() ??
+                  '',
+            ) ??
+            DateTime.now(),
+        status: StudentDashboardModel._parseBookingStatus(
+          b['status']?.toString() ?? 'pending',
+        ),
+        amount: _toDouble(b['price'] ?? b['amount']),
+        duration: _toInt(b['duration'] ?? 60),
+        notes: b['notes']?.toString(),
+      );
+    }).toList();
+  }
+
+  /// Parse raw transaction JSON into [RecentTransactionEntity] list
+  List<RecentTransactionEntity> parseRecentTransactions() {
+    return rawRecentTransactions.map((t) {
+      return RecentTransactionEntity(
+        id: t['_id']?.toString() ?? t['id']?.toString() ?? '',
+        userId: t['receiver']?.toString() ?? '',
+        type: TransactionType.earnings,
+        amount: _toDouble(t['receiverAmount'] ?? t['amount']),
+        createdAt:
+            DateTime.tryParse(t['createdAt']?.toString() ?? '') ??
+            DateTime.now(),
+        status: StudentDashboardModel._parseTransactionStatus(
+          t['status']?.toString() ?? 'pending',
+        ),
+        description: t['description']?.toString() ?? 'Earnings',
+        bookingId: t['booking']?.toString(),
+      );
+    }).toList();
+  }
 }
 
 class AdminDashboardModel extends AdminDashboardStats {

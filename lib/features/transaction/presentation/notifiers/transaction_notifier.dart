@@ -1,88 +1,194 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/transaction_repository.dart';
+import '../../../../core/usecases/usecase.dart';
+import '../../domain/usecases/payment_usecases.dart';
 import '../state/transaction_state.dart';
 
 class TransactionNotifier extends StateNotifier<TransactionState> {
-  final TransactionRepository repository;
+  final InitializePaymentUseCase initializePaymentUseCase;
+  final VerifyPaymentUseCase verifyPaymentUseCase;
+  final FetchPaymentHistoryUseCase fetchPaymentHistoryUseCase;
+  final FetchReceivedTransactionsUseCase fetchReceivedTransactionsUseCase;
 
-  TransactionNotifier({required this.repository})
-    : super(const TransactionState());
+  TransactionNotifier({
+    required this.initializePaymentUseCase,
+    required this.verifyPaymentUseCase,
+    required this.fetchPaymentHistoryUseCase,
+    required this.fetchReceivedTransactionsUseCase,
+  }) : super(const TransactionState());
 
-  /// Init booking payment - get eSewa payment details
+  /// Initialize payment and get signed eSewa payload from backend.
   Future<bool> initBookingPayment(String bookingId) async {
     state = state.copyWith(
-      isLoading: true,
+      flowStatus: PaymentFlowStatus.initiating,
       error: null,
+      statusMessage: null,
       paymentProcessed: false,
     );
+    debugPrint('[PaymentAudit] init start bookingId=$bookingId');
 
-    final result = await repository.initBookingPayment(bookingId);
+    final result = await initializePaymentUseCase(
+      InitializePaymentParams(bookingId: bookingId),
+    );
+
     return result.fold(
       (failure) {
-        state = state.copyWith(isLoading: false, error: failure.message);
+        debugPrint('[PaymentAudit] init failed message=${failure.message}');
+        state = state.copyWith(
+          flowStatus: PaymentFlowStatus.error,
+          error: failure.message,
+        );
         return false;
       },
       (paymentInit) {
-        state = state.copyWith(isLoading: false, paymentInit: paymentInit);
+        debugPrint(
+          '[PaymentAudit] init success txUUID=${paymentInit.transactionUuid} amount=${paymentInit.amount}',
+        );
+        state = state.copyWith(
+          flowStatus: PaymentFlowStatus.redirecting,
+          paymentInit: paymentInit,
+          statusMessage: 'Payment initialized',
+        );
         return true;
       },
     );
   }
 
-  /// Process/verify payment after eSewa callback
-  Future<bool> processBookingPayment({
-    required String transactionId,
+  /// Verify payment callback with backend before marking success.
+  Future<bool> verifyBookingPayment({
+    required String transactionUUID,
+    required double amount,
     required String transactionCode,
+    Map<String, dynamic>? callbackData,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
-
-    final result = await repository.processBookingPayment(
-      transactionId: transactionId,
-      transactionCode: transactionCode,
+    state = state.copyWith(
+      flowStatus: PaymentFlowStatus.verifying,
+      error: null,
+      statusMessage: 'Verifying payment...',
+      lastCallbackData: callbackData,
     );
+    debugPrint(
+      '[PaymentAudit] verify start txUUID=$transactionUUID amount=$amount code=$transactionCode',
+    );
+
+    final result = await verifyPaymentUseCase(
+      VerifyPaymentParams(
+        transactionUUID: transactionUUID,
+        amount: amount,
+        transactionCode: transactionCode,
+        callbackData: callbackData,
+      ),
+    );
+
     return result.fold(
       (failure) {
-        state = state.copyWith(isLoading: false, error: failure.message);
+        debugPrint('[PaymentAudit] verify failed message=${failure.message}');
+        state = state.copyWith(
+          flowStatus: PaymentFlowStatus.failure,
+          error: failure.message,
+          statusMessage: 'Payment verification failed',
+          paymentProcessed: false,
+        );
         return false;
       },
       (_) {
-        state = state.copyWith(isLoading: false, paymentProcessed: true);
+        debugPrint('[PaymentAudit] verify success txUUID=$transactionUUID');
+        state = state.copyWith(
+          flowStatus: PaymentFlowStatus.success,
+          paymentProcessed: true,
+          statusMessage: 'Payment verified successfully',
+        );
         return true;
       },
     );
   }
 
-  /// Fetch sent transactions (payments made)
-  Future<void> fetchSentTransactions() async {
-    state = state.copyWith(isLoading: true, error: null);
+  /// Parse callback payload from URI query params.
+  /// First tries `data` (base64 JSON), then falls back to direct query params.
+  Map<String, dynamic> parseCallbackPayload(Map<String, String> queryParams) {
+    try {
+      if (queryParams['data'] != null && queryParams['data']!.isNotEmpty) {
+        final decoded = utf8.decode(base64.decode(queryParams['data']!));
+        final jsonData = jsonDecode(decoded);
+        if (jsonData is Map<String, dynamic>) {
+          debugPrint('[PaymentAudit] callback parsed via data payload');
+          return jsonData;
+        }
+      }
+    } catch (e) {
+      debugPrint('[PaymentAudit] callback data param parse failed: $e');
+    }
 
-    final result = await repository.getSentTransactions();
+    final fallback = <String, dynamic>{
+      for (final entry in queryParams.entries) entry.key: entry.value,
+    };
+    debugPrint('[PaymentAudit] callback parsed via direct query params');
+    return fallback;
+  }
+
+  Future<void> fetchSentTransactions() async {
+    state = state.copyWith(
+      flowStatus: PaymentFlowStatus.initiating,
+      error: null,
+    );
+
+    final result = await fetchPaymentHistoryUseCase(const NoParams());
     result.fold(
-      (failure) =>
-          state = state.copyWith(isLoading: false, error: failure.message),
-      (transactions) => state = state.copyWith(
-        isLoading: false,
-        sentTransactions: transactions,
-      ),
+      (failure) {
+        state = state.copyWith(
+          flowStatus: PaymentFlowStatus.error,
+          error: failure.message,
+        );
+      },
+      (transactions) {
+        state = state.copyWith(
+          flowStatus: PaymentFlowStatus.initial,
+          sentTransactions: transactions,
+          paymentHistory: transactions,
+        );
+      },
     );
   }
 
-  /// Fetch received transactions (income)
   Future<void> fetchReceivedTransactions() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(
+      flowStatus: PaymentFlowStatus.initiating,
+      error: null,
+    );
 
-    final result = await repository.getReceivedTransactions();
+    final result = await fetchReceivedTransactionsUseCase(const NoParams());
     result.fold(
-      (failure) =>
-          state = state.copyWith(isLoading: false, error: failure.message),
-      (transactions) => state = state.copyWith(
-        isLoading: false,
-        receivedTransactions: transactions,
-      ),
+      (failure) {
+        state = state.copyWith(
+          flowStatus: PaymentFlowStatus.error,
+          error: failure.message,
+        );
+      },
+      (transactions) {
+        state = state.copyWith(
+          flowStatus: PaymentFlowStatus.initial,
+          receivedTransactions: transactions,
+        );
+      },
+    );
+  }
+
+  Future<bool> processBookingPayment({
+    required String transactionId,
+    required String transactionCode,
+    Map<String, dynamic>? esewaCallbackData,
+  }) {
+    return verifyBookingPayment(
+      transactionUUID: transactionId,
+      amount: state.paymentInit?.amount ?? 0,
+      transactionCode: transactionCode,
+      callbackData: esewaCallbackData,
     );
   }
 
   void clearPaymentState() {
-    state = state.copyWith(paymentProcessed: false);
+    state = const TransactionState();
   }
 }

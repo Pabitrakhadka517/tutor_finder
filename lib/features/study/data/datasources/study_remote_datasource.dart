@@ -37,13 +37,13 @@ class StudyRemoteDataSourceImpl implements StudyRemoteDataSource {
       if (response.statusCode == 200) {
         final list = response.data['resources'] as List? ?? [];
         return list
-            .map((r) =>
-                StudyResourceModel.fromJson(r as Map<String, dynamic>))
+            .map((r) => StudyResourceModel.fromJson(r as Map<String, dynamic>))
             .toList();
       }
-      throw ServerException( 'Failed to fetch resources');
+      throw ServerException('Failed to fetch resources');
     } on DioException catch (e) {
-      throw ServerException( e.response?.data['message'] ?? 'Failed to fetch resources',
+      throw ServerException(
+        e.response?.data['message'] ?? 'Failed to fetch resources',
       );
     }
   }
@@ -56,13 +56,13 @@ class StudyRemoteDataSourceImpl implements StudyRemoteDataSource {
       if (response.statusCode == 200) {
         final list = response.data['resources'] as List? ?? [];
         return list
-            .map((r) =>
-                StudyResourceModel.fromJson(r as Map<String, dynamic>))
+            .map((r) => StudyResourceModel.fromJson(r as Map<String, dynamic>))
             .toList();
       }
-      throw ServerException( 'Failed to fetch my resources');
+      throw ServerException('Failed to fetch my resources');
     } on DioException catch (e) {
-      throw ServerException( e.response?.data['message'] ?? 'Failed to fetch my resources',
+      throw ServerException(
+        e.response?.data['message'] ?? 'Failed to fetch my resources',
       );
     }
   }
@@ -85,7 +85,7 @@ class StudyRemoteDataSourceImpl implements StudyRemoteDataSource {
       });
 
       final response = await apiClient.dio.post(
-        ApiEndpoints.studyResources,
+        ApiEndpoints.studyUpload,
         data: formData,
         options: Options(contentType: 'multipart/form-data'),
       );
@@ -93,10 +93,12 @@ class StudyRemoteDataSourceImpl implements StudyRemoteDataSource {
       if (response.statusCode == 201 || response.statusCode == 200) {
         return StudyResourceModel.fromJson(response.data['resource']);
       }
-      throw ServerException( response.data['message'] ?? 'Failed to upload resource',
+      throw ServerException(
+        response.data['message'] ?? 'Failed to upload resource',
       );
     } on DioException catch (e) {
-      throw ServerException( e.response?.data['message'] ?? 'Failed to upload resource',
+      throw ServerException(
+        e.response?.data['message'] ?? 'Failed to upload resource',
       );
     }
   }
@@ -109,10 +111,12 @@ class StudyRemoteDataSourceImpl implements StudyRemoteDataSource {
       );
 
       if (response.statusCode == 200) return;
-      throw ServerException( response.data['message'] ?? 'Failed to delete resource',
+      throw ServerException(
+        response.data['message'] ?? 'Failed to delete resource',
       );
     } on DioException catch (e) {
-      throw ServerException( e.response?.data['message'] ?? 'Failed to delete resource',
+      throw ServerException(
+        e.response?.data['message'] ?? 'Failed to delete resource',
       );
     }
   }

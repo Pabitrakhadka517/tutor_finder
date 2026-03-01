@@ -3,18 +3,34 @@ import '../../../core/error/failures.dart';
 import 'entities/transaction_entity.dart';
 
 abstract class TransactionRepository {
-  /// Init a booking payment - returns eSewa payment details
-  Future<Either<Failure, PaymentInitEntity>> initBookingPayment(String bookingId);
+  /// Initialize booking payment and return eSewa form payload from backend.
+  Future<Either<Failure, PaymentInitEntity>> initializePayment({
+    required String bookingId,
+  });
 
-  /// Process/verify payment after eSewa callback
+  /// Verify payment callback details from eSewa via backend verification API.
+  Future<Either<Failure, void>> verifyPayment({
+    required String transactionUUID,
+    required double amount,
+    required String transactionCode,
+    Map<String, dynamic>? callbackData,
+  });
+
+  /// Fetch user booking payment history.
+  Future<Either<Failure, List<TransactionEntity>>> fetchPaymentHistory();
+
+  /// Legacy wrappers used by existing screens.
+  Future<Either<Failure, PaymentInitEntity>> initBookingPayment(
+    String bookingId,
+  );
+
   Future<Either<Failure, void>> processBookingPayment({
     required String transactionId,
     required String transactionCode,
+    Map<String, dynamic>? esewaCallbackData,
   });
 
-  /// Get transactions sent by current user (payments made)
   Future<Either<Failure, List<TransactionEntity>>> getSentTransactions();
 
-  /// Get transactions received by current user (income)
   Future<Either<Failure, List<TransactionEntity>>> getReceivedTransactions();
 }

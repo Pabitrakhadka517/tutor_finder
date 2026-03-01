@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../providers/transaction_providers.dart';
 
-/// Payment page for booking - initiates eSewa payment flow
+import '../../../../app/routes/app_routes.dart';
+import '../../../../core/config/esewa_config.dart';
+import '../providers/transaction_providers.dart';
+import 'esewa_webview_page.dart';
+
 class PaymentPage extends ConsumerStatefulWidget {
   final String bookingId;
   final String tutorName;
@@ -20,576 +22,325 @@ class PaymentPage extends ConsumerStatefulWidget {
   ConsumerState<PaymentPage> createState() => _PaymentPageState();
 }
 
-class _PaymentPageState extends ConsumerState<PaymentPage>
-    with WidgetsBindingObserver {
-  bool _paymentInitiated = false;
-  bool _processingPayment = false;
-  bool _esewaOpened = false;
-  String? _initError;
+class _PaymentPageState extends ConsumerState<PaymentPage> {
+  String _selectedMethod = 'eSewa';
+  bool _submitting = false;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _initPayment();
-  }
+  Future<void> _startPayment() async {
+    if (_submitting) return;
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
+    setState(() => _submitting = true);
 
-  /// When user returns from eSewa browser, auto-verify the payment
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _esewaOpened) {
-      _esewaOpened = false;
-      _verifyPaymentAfterReturn();
+    final notifier = ref.read(transactionNotifierProvider.notifier);
+
+    final initialized = await notifier.initBookingPayment(widget.bookingId);
+    if (!mounted) return;
+
+    if (!initialized) {
+      setState(() => _submitting = false);
+      final err =
+          ref.read(transactionNotifierProvider).error ??
+          'Failed to initialize payment';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(err), backgroundColor: Colors.red));
+      return;
     }
-  }
 
-  Future<void> _initPayment() async {
-    setState(() => _initError = null);
-
-    final success = await ref
-        .read(transactionNotifierProvider.notifier)
-        .initBookingPayment(widget.bookingId);
-
-    if (mounted) {
-      if (success) {
-        setState(() => _paymentInitiated = true);
-      } else {
-        final error = ref.read(transactionNotifierProvider).error;
-        setState(() => _initError = error ?? 'Failed to initialize payment');
-      }
-    }
-  }
-
-  /// Open eSewa payment URL in the external browser
-  Future<void> _launchEsewaPayment() async {
-    final state = ref.read(transactionNotifierProvider);
-    if (state.paymentInit == null) return;
-
-    final paymentInit = state.paymentInit!;
-    final esewaUrl = Uri.parse(
-      'https://rc-epay.esewa.com.np/api/epay/main/v2/form'
-      '?amt=${paymentInit.amount.toStringAsFixed(0)}'
-      '&psc=0&pdc=0&txAmt=0'
-      '&tAmt=${paymentInit.amount.toStringAsFixed(0)}'
-      '&pid=${paymentInit.transactionUuid}'
-      '&scd=${paymentInit.productCode}'
-      '&su=${Uri.encodeComponent(paymentInit.successUrl)}'
-      '&fu=${Uri.encodeComponent(paymentInit.failureUrl)}',
-    );
-
-    try {
-      final canOpen = await canLaunchUrl(esewaUrl);
-      if (canOpen) {
-        setState(() => _esewaOpened = true);
-        await launchUrl(esewaUrl, mode: LaunchMode.externalApplication);
-      } else {
-        // Fallback: use in-app payment verification flow
-        if (mounted) _processPaymentDirectly();
-      }
-    } catch (e) {
-      // Fallback: direct payment verification
-      if (mounted) _processPaymentDirectly();
-    }
-  }
-
-  /// Direct payment processing (for test/development mode)
-  Future<void> _processPaymentDirectly() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Confirm Payment'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF60BB46).withAlpha(25),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'eSewa Payment',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Rs. ${widget.price.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF60BB46),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'to ${widget.tutorName}',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Proceed with this payment?',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ],
+    final paymentInit = ref.read(transactionNotifierProvider).paymentInit;
+    if (paymentInit == null) {
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Payment payload missing from backend response'),
+          backgroundColor: Colors.red,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF60BB46),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Pay Now'),
-          ),
-        ],
+      );
+      return;
+    }
+
+    final result = await Navigator.of(context).push<EsewaWebViewResult>(
+      MaterialPageRoute(
+        builder: (_) => EsewaWebViewPage(paymentInit: paymentInit),
       ),
     );
-
-    if (confirmed == true && mounted) {
-      await _processPayment();
-    }
-  }
-
-  /// Process the payment verification with the backend
-  Future<void> _processPayment() async {
-    final state = ref.read(transactionNotifierProvider);
-    if (state.paymentInit == null) return;
-
-    setState(() => _processingPayment = true);
-
-    final transactionCode = 'ESEWA_${DateTime.now().millisecondsSinceEpoch}';
-    final success = await ref
-        .read(transactionNotifierProvider.notifier)
-        .processBookingPayment(
-          transactionId: state.paymentInit!.transactionId,
-          transactionCode: transactionCode,
-        );
 
     if (!mounted) return;
-    setState(() => _processingPayment = false);
 
-    if (success) {
-      _showSuccessDialog();
-    } else {
-      _showFailureDialog();
+    if (result == null || result.isCancelled || !result.isSuccess) {
+      setState(() => _submitting = false);
+      await Navigator.of(context).pushNamed(
+        AppRoutes.paymentFailure,
+        arguments: {
+          'message':
+              result?.message ??
+              'Payment cancelled or failed before verification.',
+        },
+      );
+      return;
     }
-  }
 
-  /// Verify payment after returning from eSewa browser
-  Future<void> _verifyPaymentAfterReturn() async {
-    final state = ref.read(transactionNotifierProvider);
-    if (state.paymentInit == null) return;
+    final callbackData = result.callbackData;
+    final transactionUUID = _pickString(callbackData, const [
+      'transaction_uuid',
+      'transactionUUID',
+      'transactionUuid',
+    ]);
+    final transactionCode = _pickString(callbackData, const [
+      'transaction_code',
+      'transactionCode',
+    ]);
+    final safeTransactionCode = transactionCode.isNotEmpty
+        ? transactionCode
+        : 'ESEWA_${DateTime.now().millisecondsSinceEpoch}';
+    final amount = _pickDouble(callbackData, const [
+      'total_amount',
+      'amount',
+    ], fallback: paymentInit.amount);
 
-    setState(() => _processingPayment = true);
+    final strictValidationError = _validateCallbackStrict(
+      callbackData: callbackData,
+      expectedTransactionUUID: paymentInit.transactionUuid,
+      callbackTransactionUUID: transactionUUID,
+      expectedAmount: paymentInit.amount,
+      callbackAmount: amount,
+    );
 
-    // Try to verify the payment with the backend
-    final transactionCode =
-        'ESEWA_RETURN_${DateTime.now().millisecondsSinceEpoch}';
-    final success = await ref
-        .read(transactionNotifierProvider.notifier)
-        .processBookingPayment(
-          transactionId: state.paymentInit!.transactionId,
-          transactionCode: transactionCode,
-        );
+    if (strictValidationError != null) {
+      setState(() => _submitting = false);
+      await Navigator.of(context).pushNamed(
+        AppRoutes.paymentFailure,
+        arguments: {'message': strictValidationError},
+      );
+      return;
+    }
+
+    final verified = await notifier.verifyBookingPayment(
+      transactionUUID: transactionUUID.isNotEmpty
+          ? transactionUUID
+          : paymentInit.transactionUuid,
+      amount: amount,
+      transactionCode: safeTransactionCode,
+      callbackData: callbackData,
+    );
 
     if (!mounted) return;
-    setState(() => _processingPayment = false);
+    setState(() => _submitting = false);
 
-    if (success) {
-      _showSuccessDialog();
-    } else {
-      // Payment may still be pending - show option to retry or confirm manually
-      _showPendingDialog();
+    if (verified) {
+      await Navigator.of(context).pushNamed(
+        AppRoutes.paymentSuccess,
+        arguments: {
+          'bookingId': widget.bookingId,
+          'tutorName': widget.tutorName,
+          'amount': amount,
+        },
+      );
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+      return;
     }
-  }
 
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 64),
-            const SizedBox(height: 16),
-            const Text(
-              'Payment Successful!',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Rs. ${widget.price.toStringAsFixed(0)} paid to ${widget.tutorName}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'A chat room has been created. You can now message your tutor!',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).pop(true);
-            },
-            child: const Text('Done'),
-          ),
-        ],
-      ),
+    await Navigator.of(context).pushNamed(
+      AppRoutes.paymentFailure,
+      arguments: {
+        'message':
+            ref.read(transactionNotifierProvider).error ??
+            'Payment verification failed',
+      },
     );
   }
 
-  void _showFailureDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, color: Colors.red[400], size: 64),
-            const SizedBox(height: 16),
-            const Text(
-              'Payment Failed',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              ref.read(transactionNotifierProvider).error ??
-                  'Something went wrong. Please try again.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _processPaymentDirectly();
-            },
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
+  static String _pickString(Map<String, dynamic> source, List<String> keys) {
+    for (final key in keys) {
+      final value = source[key]?.toString();
+      if (value != null && value.isNotEmpty) return value;
+    }
+    return '';
   }
 
-  void _showPendingDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.hourglass_bottom, color: Colors.orange[400], size: 64),
-            const SizedBox(height: 16),
-            const Text(
-              'Payment Pending',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Your payment is being processed. If you completed payment in eSewa, tap "Verify" to confirm.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.of(context).pop(false);
-            },
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _processPayment();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF60BB46),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Verify Payment'),
-          ),
-        ],
-      ),
-    );
+  static double _pickDouble(
+    Map<String, dynamic> source,
+    List<String> keys, {
+    required double fallback,
+  }) {
+    for (final key in keys) {
+      final value = source[key];
+      if (value is num) return value.toDouble();
+      final parsed = double.tryParse(
+        value?.toString().replaceAll(',', '') ?? '',
+      );
+      if (parsed != null) return parsed;
+    }
+    return fallback;
+  }
+
+  static String? _validateCallbackStrict({
+    required Map<String, dynamic> callbackData,
+    required String expectedTransactionUUID,
+    required String callbackTransactionUUID,
+    required double expectedAmount,
+    required double callbackAmount,
+  }) {
+    if (!EsewaConfig.strictMode) {
+      return null;
+    }
+
+    if (callbackTransactionUUID.isEmpty) {
+      return 'Invalid payment callback: missing transaction UUID.';
+    }
+
+    if (callbackTransactionUUID != expectedTransactionUUID) {
+      return 'Invalid payment callback: transaction UUID mismatch.';
+    }
+
+    if ((callbackAmount - expectedAmount).abs() > 0.01) {
+      return 'Invalid payment callback: amount mismatch.';
+    }
+
+    final status = callbackData['status']?.toString();
+    if (status != null && status.isNotEmpty && status != 'COMPLETE') {
+      return 'Payment is not complete. eSewa status: $status';
+    }
+
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final txState = ref.watch(transactionNotifierProvider);
+    final state = ref.watch(transactionNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pay with eSewa'),
-        backgroundColor: const Color(0xFF60BB46), // eSewa green
-        foregroundColor: Colors.white,
-      ),
-      body: txState.isLoading && !_paymentInitiated
-          ? const Center(child: CircularProgressIndicator())
-          : (_initError != null ||
-                (txState.error != null && !_paymentInitiated))
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    _initError ??
-                        txState.error ??
-                        'Payment initialization failed',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _initPayment,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  // eSewa Logo Section
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF60BB46).withAlpha(25),
-                      borderRadius: BorderRadius.circular(16),
+      appBar: AppBar(title: const Text('Complete Payment')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Payment Method',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+            ),
+            const SizedBox(height: 12),
+            _PaymentMethodOption(
+              title: 'eSewa',
+              subtitle: 'Secure digital wallet payment',
+              isSelected: _selectedMethod == 'eSewa',
+              onTap: () {
+                setState(() => _selectedMethod = 'eSewa');
+              },
+            ),
+            const SizedBox(height: 20),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SummaryRow(title: 'Tutor', value: widget.tutorName),
+                    _SummaryRow(
+                      title: 'Amount',
+                      value: 'Rs. ${widget.price.toStringAsFixed(2)}',
                     ),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF60BB46),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'eSewa',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Digital Payment',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Payment Details Card
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Payment Details',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Divider(height: 24),
-                          _buildDetailRow('Tutor', widget.tutorName),
-                          _buildDetailRow(
-                            'Amount',
-                            'Rs. ${widget.price.toStringAsFixed(0)}',
-                          ),
-                          if (txState.paymentInit != null) ...[
-                            _buildDetailRow(
-                              'Product Code',
-                              txState.paymentInit!.productCode,
-                            ),
-                            _buildDetailRow(
-                              'Transaction ID',
-                              txState.paymentInit!.transactionUuid
-                                  .substring(0, 8)
-                                  .toUpperCase(),
-                            ),
-                          ],
-                          _buildDetailRow('Payment Method', 'eSewa'),
-                          const Divider(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Total',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'Rs. ${widget.price.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF60BB46),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Commission info
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'A 10% platform commission will be deducted. The tutor receives the remaining amount.',
-                            style: TextStyle(fontSize: 12, color: Colors.blue),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Pay Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _paymentInitiated && !_processingPayment
-                          ? _launchEsewaPayment
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF60BB46),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _processingPayment
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(
-                              'Pay Rs. ${widget.price.toStringAsFixed(0)} with eSewa',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Manual/Test Payment Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 44,
-                    child: OutlinedButton(
-                      onPressed: _paymentInitiated && !_processingPayment
-                          ? _processPaymentDirectly
-                          : null,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF60BB46),
-                        side: const BorderSide(color: Color(0xFF60BB46)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Confirm Payment Manually',
-                        style: TextStyle(fontSize: 14),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Cancel Button
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancel Payment'),
-                  ),
-                ],
+                    _SummaryRow(title: 'Booking', value: widget.bookingId),
+                  ],
+                ),
               ),
             ),
+            if (state.error != null) ...[
+              const SizedBox(height: 12),
+              Text(state.error!, style: const TextStyle(color: Colors.red)),
+            ],
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _selectedMethod == 'eSewa' && !_submitting
+                    ? _startPayment
+                    : null,
+                child: state.isLoading || _submitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Continue with eSewa'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
+}
 
-  Widget _buildDetailRow(String label, String value) {
+class _PaymentMethodOption extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _PaymentMethodOption({
+    required this.title,
+    required this.subtitle,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey.shade300,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [Text(title), Text(subtitle)],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  final String title;
+  final String value;
+
+  const _SummaryRow({required this.title, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Expanded(
+            child: Text(title, style: TextStyle(color: Colors.grey.shade700)),
+          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );

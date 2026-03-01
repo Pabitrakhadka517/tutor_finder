@@ -11,12 +11,22 @@ class AvailabilitySlotModel extends AvailabilitySlotEntity {
   });
 
   factory AvailabilitySlotModel.fromJson(Map<String, dynamic> json) {
+    final tutorField = json['tutorId'] ?? json['tutor'];
+    final parsedTutorId = tutorField is Map<String, dynamic>
+        ? (tutorField['_id'] ?? tutorField['id'] ?? '').toString()
+        : (tutorField ?? '').toString();
+
+    final rawIsBooked = json['isBooked'];
+    final parsedIsBooked = rawIsBooked is bool
+        ? rawIsBooked
+        : rawIsBooked?.toString().toLowerCase() == 'true';
+
     return AvailabilitySlotModel(
       id: json['_id'] ?? json['id'] ?? '',
-      tutorId: json['tutorId'] ?? '',
+      tutorId: parsedTutorId,
       startTime: DateTime.parse(json['startTime']),
       endTime: DateTime.parse(json['endTime']),
-      isBooked: json['isBooked'] ?? false,
+      isBooked: parsedIsBooked,
     );
   }
 

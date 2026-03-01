@@ -22,11 +22,6 @@ class _AvailabilityManagementPageState
   bool _isSaving = false;
   String? _error;
 
-  // For new slot creation
-  DateTime? _newStartDate;
-  TimeOfDay? _newStartTime;
-  TimeOfDay? _newEndTime;
-
   @override
   void initState() {
     super.initState();
@@ -114,23 +109,37 @@ class _AvailabilityManagementPageState
     // Save to backend
     setState(() => _isSaving = true);
     final repo = ref.read(tutorRepositoryProvider);
-    final newSlots = [
-      ..._slots.map(
-        (s) => AvailabilitySlotModel(
-          id: s.id,
-          tutorId: s.tutorId,
-          startTime: s.startTime,
-          endTime: s.endTime,
-          isBooked: s.isBooked,
-        ),
-      ),
-      AvailabilitySlotModel(
-        id: '',
-        tutorId: '',
-        startTime: startDateTime,
-        endTime: endDateTime,
-      ),
-    ];
+
+    final now = DateTime.now();
+    final existingEditable = _slots
+        .where((s) => !s.isBooked && s.endTime.isAfter(now))
+        .map(
+          (s) => AvailabilitySlotModel(
+            id: s.id,
+            tutorId: s.tutorId,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            isBooked: s.isBooked,
+          ),
+        )
+        .toList();
+
+    final candidate = AvailabilitySlotModel(
+      id: '',
+      tutorId: '',
+      startTime: startDateTime,
+      endTime: endDateTime,
+    );
+
+    final deduped = <String, AvailabilitySlotModel>{};
+    for (final slot in [...existingEditable, candidate]) {
+      final key =
+          '${slot.startTime.toUtc().toIso8601String()}|${slot.endTime.toUtc().toIso8601String()}';
+      deduped[key] = slot;
+    }
+
+    final newSlots = deduped.values.toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     final result = await repo.setAvailability(newSlots);
     result.fold(

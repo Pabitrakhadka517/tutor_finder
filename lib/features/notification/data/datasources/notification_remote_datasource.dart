@@ -59,7 +59,9 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   Future<int> getUnreadCount() async {
     try {
       final response = await _dioClient.get(ApiEndpoints.unreadCount);
-      return (response.data['count'] as num?)?.toInt() ?? 0;
+      return (response.data['unreadCount'] as num?)?.toInt() ??
+          (response.data['count'] as num?)?.toInt() ??
+          0;
     } on DioException catch (e) {
       throw _handleError(e, 'Failed to get unread count');
     }
@@ -71,9 +73,7 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   @override
   Future<void> markAsRead(String notificationId) async {
     try {
-      await _dioClient.patch(
-        ApiEndpoints.markNotificationRead(notificationId),
-      );
+      await _dioClient.patch(ApiEndpoints.markNotificationRead(notificationId));
     } on DioException catch (e) {
       throw _handleError(e, 'Failed to mark notification as read');
     }
@@ -97,9 +97,7 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   @override
   Future<void> deleteNotification(String notificationId) async {
     try {
-      await _dioClient.delete(
-        ApiEndpoints.deleteNotification(notificationId),
-      );
+      await _dioClient.delete(ApiEndpoints.deleteNotification(notificationId));
     } on DioException catch (e) {
       throw _handleError(e, 'Failed to delete notification');
     }

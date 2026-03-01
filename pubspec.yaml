@@ -81,6 +81,9 @@ dependencies:
   # URL launching
   url_launcher: ^6.2.5
 
+  # eSewa redirect flow in-app
+  webview_flutter: ^4.10.0
+
   # Deep linking / app links (password reset from email)
   app_links: ^6.3.3
   

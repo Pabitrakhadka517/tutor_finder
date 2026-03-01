@@ -24,6 +24,13 @@ abstract class TutorRepository {
     DateTime? endDate,
   });
 
+  /// Get a specific tutor's availability slots (for students)
+  Future<Either<Failure, List<AvailabilitySlotEntity>>> getTutorAvailability(
+    String tutorId, {
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+
   /// Set tutor's availability slots (for tutor role)
   Future<Either<Failure, void>> setAvailability(
     List<AvailabilitySlotEntity> slots,
