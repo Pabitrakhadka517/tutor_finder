@@ -8,7 +8,6 @@ import '../../../chat/presentation/pages/chat_list_page.dart';
 import '../../../notification/presentation/pages/notification_page.dart';
 import '../../../review/presentation/pages/tutor_reviews_page.dart';
 import '../../../study/presentation/pages/study_resources_page.dart';
-import '../../../study/presentation/pages/my_resources_page.dart';
 import '../../../transaction/presentation/pages/transaction_history_page.dart';
 import 'wallet_page.dart';
 import '../../../tutor/presentation/pages/availability_management_page.dart';
@@ -426,14 +425,6 @@ class _TutorDashboardPageState extends ConsumerState<TutorDashboardPage> {
                 color: AppColors.accentBlue,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const BookingListPage()),
-                ),
-              ),
-              _ActionTile(
-                icon: Icons.menu_book_rounded,
-                label: 'My Resources',
-                color: AppColors.accentPurple,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const MyResourcesPage()),
                 ),
               ),
               _ActionTile(

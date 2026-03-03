@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -21,11 +23,22 @@ class _AvailabilityManagementPageState
   bool _isLoading = true;
   bool _isSaving = false;
   String? _error;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadAvailability();
+    // Periodic timer to refresh isPast status every 30 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadAvailability() async {
@@ -84,14 +97,14 @@ class _AvailabilityManagementPageState
       date.day,
       startTime.hour,
       startTime.minute,
-    );
+    ).toUtc();
     final endDateTime = DateTime(
       date.year,
       date.month,
       date.day,
       endTime.hour,
       endTime.minute,
-    );
+    ).toUtc();
 
     if (endDateTime.isBefore(startDateTime) ||
         endDateTime.isAtSameMomentAs(startDateTime)) {
@@ -110,7 +123,7 @@ class _AvailabilityManagementPageState
     setState(() => _isSaving = true);
     final repo = ref.read(tutorRepositoryProvider);
 
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
     final existingEditable = _slots
         .where((s) => !s.isBooked && s.endTime.isAfter(now))
         .map(
@@ -227,7 +240,7 @@ class _AvailabilityManagementPageState
                 itemCount: _slots.length,
                 itemBuilder: (context, index) {
                   final slot = _slots[index];
-                  final isPast = slot.endTime.isBefore(DateTime.now());
+                  final isPast = slot.endTime.isBefore(DateTime.now().toUtc());
                   return Card(
                     margin: const EdgeInsets.only(bottom: 10),
                     shape: RoundedRectangleBorder(
@@ -252,11 +265,11 @@ class _AvailabilityManagementPageState
                             : Colors.green,
                       ),
                       title: Text(
-                        dateFormat.format(slot.startTime),
+                        dateFormat.format(slot.startTime.toLocal()),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(
-                        '${timeFormat.format(slot.startTime)} - ${timeFormat.format(slot.endTime)}',
+                        '${timeFormat.format(slot.startTime.toLocal())} - ${timeFormat.format(slot.endTime.toLocal())}',
                       ),
                       trailing: slot.isBooked
                           ? Chip(

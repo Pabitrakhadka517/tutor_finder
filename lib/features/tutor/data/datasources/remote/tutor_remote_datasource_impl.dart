@@ -88,10 +88,10 @@ class TutorRemoteDataSourceImpl implements TutorRemoteDataSource {
     try {
       final queryParams = <String, dynamic>{};
       if (startDate != null) {
-        queryParams['startDate'] = startDate.toIso8601String();
+        queryParams['startDate'] = startDate.toUtc().toIso8601String();
       }
       if (endDate != null) {
-        queryParams['endDate'] = endDate.toIso8601String();
+        queryParams['endDate'] = endDate.toUtc().toIso8601String();
       }
 
       final response = await apiClient.get(
@@ -123,10 +123,10 @@ class TutorRemoteDataSourceImpl implements TutorRemoteDataSource {
     try {
       final queryParams = <String, dynamic>{};
       if (startDate != null) {
-        queryParams['startDate'] = startDate.toIso8601String();
+        queryParams['startDate'] = startDate.toUtc().toIso8601String();
       }
       if (endDate != null) {
-        queryParams['endDate'] = endDate.toIso8601String();
+        queryParams['endDate'] = endDate.toUtc().toIso8601String();
       }
 
       final response = await apiClient.get(

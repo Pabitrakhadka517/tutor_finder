@@ -21,6 +21,34 @@ class StudyRemoteDataSourceImpl implements StudyRemoteDataSource {
   final ApiClient apiClient;
   StudyRemoteDataSourceImpl({required this.apiClient});
 
+  List<dynamic> _extractResourcesList(dynamic data) {
+    if (data is! Map) return const [];
+
+    final direct = data['resources'];
+    if (direct is List) return direct;
+
+    final wrapped = data['data'];
+    if (wrapped is Map && wrapped['resources'] is List) {
+      return wrapped['resources'] as List;
+    }
+
+    return const [];
+  }
+
+  Map<String, dynamic>? _extractResourceMap(dynamic data) {
+    if (data is! Map) return null;
+
+    final direct = data['resource'];
+    if (direct is Map<String, dynamic>) return direct;
+
+    final wrapped = data['data'];
+    if (wrapped is Map && wrapped['resource'] is Map<String, dynamic>) {
+      return wrapped['resource'] as Map<String, dynamic>;
+    }
+
+    return null;
+  }
+
   @override
   Future<List<StudyResourceModel>> getResources({String? category}) async {
     try {
@@ -35,7 +63,7 @@ class StudyRemoteDataSourceImpl implements StudyRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        final list = response.data['resources'] as List? ?? [];
+        final list = _extractResourcesList(response.data);
         return list
             .map((r) => StudyResourceModel.fromJson(r as Map<String, dynamic>))
             .toList();
@@ -54,7 +82,7 @@ class StudyRemoteDataSourceImpl implements StudyRemoteDataSource {
       final response = await apiClient.dio.get(ApiEndpoints.myStudyResources);
 
       if (response.statusCode == 200) {
-        final list = response.data['resources'] as List? ?? [];
+        final list = _extractResourcesList(response.data);
         return list
             .map((r) => StudyResourceModel.fromJson(r as Map<String, dynamic>))
             .toList();
@@ -91,7 +119,11 @@ class StudyRemoteDataSourceImpl implements StudyRemoteDataSource {
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return StudyResourceModel.fromJson(response.data['resource']);
+        final resource = _extractResourceMap(response.data);
+        if (resource == null) {
+          throw ServerException('Failed to parse uploaded resource');
+        }
+        return StudyResourceModel.fromJson(resource);
       }
       throw ServerException(
         response.data['message'] ?? 'Failed to upload resource',

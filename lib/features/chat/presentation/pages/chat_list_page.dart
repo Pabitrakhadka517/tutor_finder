@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/services/socket/socket_service.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/chat_providers.dart';
 import 'chat_room_page.dart';
@@ -13,12 +14,42 @@ class ChatListPage extends ConsumerStatefulWidget {
 }
 
 class _ChatListPageState extends ConsumerState<ChatListPage> {
+  late final SocketService _socketService;
+  DateTime? _lastRealtimeRefresh;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => ref.read(chatListNotifierProvider.notifier).fetchChats(),
-    );
+    _socketService = ref.read(socketServiceProvider);
+    Future.microtask(() async {
+      await ref.read(chatListNotifierProvider.notifier).fetchChats();
+      await _initRealtimeSync();
+    });
+  }
+
+  Future<void> _initRealtimeSync() async {
+    await _socketService.connect();
+    _socketService.onReceiveMessage((_) => _refreshChatsThrottled());
+    _socketService.onMessageSent((_) => _refreshChatsThrottled());
+  }
+
+  void _refreshChatsThrottled() {
+    final now = DateTime.now();
+    if (_lastRealtimeRefresh != null &&
+        now.difference(_lastRealtimeRefresh!) <
+            const Duration(milliseconds: 400)) {
+      return;
+    }
+
+    _lastRealtimeRefresh = now;
+    ref.read(chatListNotifierProvider.notifier).fetchChats();
+  }
+
+  @override
+  void dispose() {
+    _socketService.off('receive_message');
+    _socketService.off('message_sent');
+    super.dispose();
   }
 
   @override
@@ -156,17 +187,20 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
   }
 
   String _formatTime(DateTime dateTime) {
+    final localTime = dateTime.toLocal();
     final now = DateTime.now();
-    final diff = now.difference(dateTime);
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDay = DateTime(localTime.year, localTime.month, localTime.day);
+    final diffDays = today.difference(messageDay).inDays;
 
-    if (diff.inDays == 0) {
-      return DateFormat('hh:mm a').format(dateTime);
-    } else if (diff.inDays == 1) {
+    if (diffDays == 0) {
+      return DateFormat('hh:mm a').format(localTime);
+    } else if (diffDays == 1) {
       return 'Yesterday';
-    } else if (diff.inDays < 7) {
-      return DateFormat('EEE').format(dateTime);
+    } else if (diffDays < 7) {
+      return DateFormat('EEE').format(localTime);
     } else {
-      return DateFormat('MMM d').format(dateTime);
+      return DateFormat('MMM d').format(localTime);
     }
   }
 }

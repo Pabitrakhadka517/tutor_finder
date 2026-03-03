@@ -24,16 +24,16 @@ class AvailabilitySlotModel extends AvailabilitySlotEntity {
     return AvailabilitySlotModel(
       id: json['_id'] ?? json['id'] ?? '',
       tutorId: parsedTutorId,
-      startTime: DateTime.parse(json['startTime']),
-      endTime: DateTime.parse(json['endTime']),
+      startTime: DateTime.parse(json['startTime']).toUtc(),
+      endTime: DateTime.parse(json['endTime']).toUtc(),
       isBooked: parsedIsBooked,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'startTime': startTime.toIso8601String(),
-      'endTime': endTime.toIso8601String(),
+      'startTime': startTime.toUtc().toIso8601String(),
+      'endTime': endTime.toUtc().toIso8601String(),
     };
   }
 }

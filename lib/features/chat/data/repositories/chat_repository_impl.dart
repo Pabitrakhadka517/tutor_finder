@@ -23,7 +23,8 @@ class ChatRepositoryImpl implements ChatRepository {
 
   @override
   Future<Either<Failure, ChatRoomEntity>> createChat(
-      String targetUserId) async {
+    String targetUserId,
+  ) async {
     try {
       final chat = await remoteDataSource.createChat(targetUserId);
       return Either.right(chat);
@@ -41,8 +42,11 @@ class ChatRepositoryImpl implements ChatRepository {
     int limit = 50,
   }) async {
     try {
-      final messages = await remoteDataSource.getMessages(chatId,
-          page: page, limit: limit);
+      final messages = await remoteDataSource.getMessages(
+        chatId,
+        page: page,
+        limit: limit,
+      );
       return Either.right(messages);
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
@@ -53,9 +57,43 @@ class ChatRepositoryImpl implements ChatRepository {
 
   @override
   Future<Either<Failure, MessageEntity>> sendMessage(
-      String chatId, String content) async {
+    String chatId,
+    String? content, {
+    String? filePath,
+  }) async {
     try {
-      final message = await remoteDataSource.sendMessage(chatId, content);
+      final message = await remoteDataSource.sendMessage(
+        chatId,
+        content,
+        filePath: filePath,
+      );
+      return Either.right(message);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, MessageEntity>> editMessage(
+    String messageId,
+    String content,
+  ) async {
+    try {
+      final message = await remoteDataSource.editMessage(messageId, content);
+      return Either.right(message);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, MessageEntity>> deleteMessage(String messageId) async {
+    try {
+      final message = await remoteDataSource.deleteMessage(messageId);
       return Either.right(message);
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));

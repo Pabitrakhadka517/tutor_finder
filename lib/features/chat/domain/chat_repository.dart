@@ -15,8 +15,16 @@ abstract class ChatRepository {
 
   Future<Either<Failure, MessageEntity>> sendMessage(
     String chatId,
+    String? content, {
+    String? filePath,
+  });
+
+  Future<Either<Failure, MessageEntity>> editMessage(
+    String messageId,
     String content,
   );
+
+  Future<Either<Failure, MessageEntity>> deleteMessage(String messageId);
 
   Future<Either<Failure, void>> markAsRead(String chatId);
 }

@@ -212,6 +212,16 @@ class SocketService {
     _socket?.on('messages_read', callback);
   }
 
+  /// Listen for message edits
+  void onMessageEdited(void Function(dynamic data) callback) {
+    _socket?.on('message_edited', callback);
+  }
+
+  /// Listen for message deletions
+  void onMessageDeleted(void Function(dynamic data) callback) {
+    _socket?.on('message_deleted', callback);
+  }
+
   /// Listen for room join confirmation
   void onJoinedRoom(void Function(dynamic data) callback) {
     _socket?.on('joined_room', callback);

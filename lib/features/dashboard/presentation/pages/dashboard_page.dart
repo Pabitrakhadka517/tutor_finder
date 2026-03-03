@@ -21,6 +21,7 @@ class DashboardPage extends ConsumerStatefulWidget {
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   int _selectedIndex = 0;
   late final SocketService _socketService;
+  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -99,122 +100,143 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final notificationState = ref.watch(notificationNotifierProvider);
     final unreadCount = notificationState.unreadCount;
 
-    return Scaffold(
-      backgroundColor: Colors.blue.shade50,
-      appBar: AppBar(
-        title: Text(
-          'Dashboard',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.blue.shade900,
-          ),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.blue.shade50,
-        actions: [
-          // Notification Icon with badge
-          Stack(
-            children: [
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Colors.blue.shade50,
+          appBar: AppBar(
+            title: Text(
+              'Dashboard',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade900,
+              ),
+            ),
+            centerTitle: true,
+            elevation: 0,
+            backgroundColor: Colors.blue.shade50,
+            actions: [
+              // Notification Icon with badge
+              Stack(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.notifications_rounded,
+                      color: Colors.blue.shade700,
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              // Profile Icon
               IconButton(
-                icon: Icon(
-                  Icons.notifications_rounded,
-                  color: Colors.blue.shade700,
-                ),
+                icon: Icon(Icons.person_rounded, color: Colors.blue.shade700),
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const NotificationPage()),
+                  _showProfileBottomSheet(
+                    context,
+                    user?.name ?? 'User',
+                    user?.email ?? '',
                   );
                 },
               ),
-              if (unreadCount > 0)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 18,
-                      minHeight: 18,
-                    ),
-                    child: Text(
-                      unreadCount > 99 ? '99+' : '$unreadCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
             ],
           ),
-          // Profile Icon
-          IconButton(
-            icon: Icon(Icons.person_rounded, color: Colors.blue.shade700),
-            onPressed: () {
-              _showProfileBottomSheet(
-                context,
-                user?.name ?? 'User',
-                user?.email ?? '',
-              );
+          drawer: _buildDrawer(
+            context,
+            user?.name ?? 'User',
+            user?.email ?? '',
+          ),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              _loadDashboardData();
+              ref
+                  .read(notificationNotifierProvider.notifier)
+                  .fetchUnreadCount();
             },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // User Welcome Section
+                  _buildWelcomeSection(user?.name ?? 'User'),
+
+                  const SizedBox(height: 24),
+
+                  // User Info Card
+                  if (user != null) _buildUserInfoCard(user.name, user.email),
+
+                  const SizedBox(height: 24),
+
+                  // Quick Actions Grid
+                  _buildQuickActionsSection(context),
+
+                  const SizedBox(height: 24),
+
+                  // Stats Section
+                  if (dashboardState.isLoading)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (dashboardState.errorMessage != null)
+                    _buildStatsErrorSection(dashboardState.errorMessage!)
+                  else
+                    _buildStatsSection(),
+
+                  const SizedBox(height: 24),
+
+                  // Recent Activity Section
+                  _buildRecentActivitySection(),
+                ],
+              ),
+            ),
           ),
-        ],
-      ),
-      drawer: _buildDrawer(context, user?.name ?? 'User', user?.email ?? ''),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          _loadDashboardData();
-          ref.read(notificationNotifierProvider.notifier).fetchUnreadCount();
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // User Welcome Section
-              _buildWelcomeSection(user?.name ?? 'User'),
-
-              const SizedBox(height: 24),
-
-              // User Info Card
-              if (user != null) _buildUserInfoCard(user.name, user.email),
-
-              const SizedBox(height: 24),
-
-              // Quick Actions Grid
-              _buildQuickActionsSection(context),
-
-              const SizedBox(height: 24),
-
-              // Stats Section
-              if (dashboardState.isLoading)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: CircularProgressIndicator(),
-                  ),
-                )
-              else if (dashboardState.errorMessage != null)
-                _buildStatsErrorSection(dashboardState.errorMessage!)
-              else
-                _buildStatsSection(),
-
-              const SizedBox(height: 24),
-
-              // Recent Activity Section
-              _buildRecentActivitySection(),
-            ],
-          ),
+          bottomNavigationBar: _buildBottomNavigationBar(),
         ),
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+        if (_isLoggingOut)
+          Positioned.fill(
+            child: ColoredBox(
+              color: Colors.blue.shade50,
+              child: Center(
+                child: CircularProgressIndicator(color: Colors.blue.shade700),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -1062,14 +1084,31 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
+                    if (_isLoggingOut) return;
                     final navigator = Navigator.of(context);
+                    final wasTutor =
+                        dialogRef
+                            .read(authNotifierProvider)
+                            .user
+                            ?.role
+                            .name
+                            .toLowerCase() ==
+                        'tutor';
                     Navigator.of(dialogContext).pop();
+                    if (!mounted) return;
+                    setState(() => _isLoggingOut = true);
+
+                    _socketService.off('new_notification');
+                    _socketService.disconnect();
+
                     await dialogRef
                         .read(authNotifierProvider.notifier)
                         .logout();
+                    if (!mounted) return;
                     navigator.pushAndRemoveUntil(
                       MaterialPageRoute(
-                        builder: (context) => const LoginPage(role: 'Student'),
+                        builder: (context) =>
+                            LoginPage(role: wasTutor ? 'Tutor' : 'Student'),
                       ),
                       (route) => false,
                     );

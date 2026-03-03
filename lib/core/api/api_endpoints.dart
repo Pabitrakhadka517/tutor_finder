@@ -89,6 +89,10 @@ class ApiEndpoints {
   static const String chats = '/api/chats';
   static String chatMessages(String chatId) => '/api/chats/$chatId/messages';
   static String sendMessage(String chatId) => '/api/chats/$chatId/messages';
+  static String editMessage(String messageId) =>
+      '/api/chats/messages/$messageId';
+  static String deleteMessage(String messageId) =>
+      '/api/chats/messages/$messageId';
   static String markRead(String chatId) => '/api/chats/$chatId/read';
 
   // ================= Transaction Endpoints =================

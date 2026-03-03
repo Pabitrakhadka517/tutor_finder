@@ -51,11 +51,13 @@ class ChatRoomModel extends ChatRoomEntity {
       studentImage: studentImage,
       tutorImage: tutorImage,
       lastMessage: json['lastMessage']?.toString(),
-      lastMessageAt:
-          DateTime.tryParse(json['lastMessageAt']?.toString() ?? ''),
+      lastMessageAt: DateTime.tryParse(
+        json['lastMessageAt']?.toString() ?? '',
+      )?.toUtc(),
       isActive: json['isActive'] ?? true,
-      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
-          DateTime.now(),
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '')?.toUtc() ??
+          DateTime.now().toUtc(),
     );
   }
 }
@@ -67,8 +69,15 @@ class MessageModel extends MessageEntity {
     required super.senderId,
     super.senderName,
     required super.message,
+    super.messageType,
+    super.fileUrl,
+    super.fileName,
+    super.attachments,
     super.isRead,
+    super.isEdited,
+    super.isDeleted,
     required super.createdAt,
+    super.updatedAt,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
@@ -88,9 +97,23 @@ class MessageModel extends MessageEntity {
       senderId: senderId,
       senderName: senderName,
       message: json['message']?.toString() ?? json['content']?.toString() ?? '',
+      messageType: chatMessageTypeFromString(json['messageType']?.toString()),
+      fileUrl: json['fileUrl']?.toString(),
+      fileName: json['fileName']?.toString(),
+      attachments:
+          (json['attachments'] as List?)
+              ?.map((item) => item.toString())
+              .toList() ??
+          const [],
       isRead: json['isRead'] ?? false,
-      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
-          DateTime.now(),
+      isEdited: json['isEdited'] ?? false,
+      isDeleted: json['isDeleted'] ?? false,
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '')?.toUtc() ??
+          DateTime.now().toUtc(),
+      updatedAt: DateTime.tryParse(
+        json['updatedAt']?.toString() ?? '',
+      )?.toUtc(),
     );
   }
 }

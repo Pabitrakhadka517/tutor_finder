@@ -41,6 +41,7 @@ class _RoleBasedDashboardShellState
     extends ConsumerState<RoleBasedDashboardShell> {
   int _selectedIndex = 0;
   late final SocketService _socketService;
+  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -78,12 +79,25 @@ class _RoleBasedDashboardShellState
     final notificationState = ref.watch(notificationNotifierProvider);
     final unreadCount = notificationState.unreadCount;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: _buildAppBar(role, user, unreadCount),
-      drawer: _buildDrawer(context, user, role),
-      body: _buildBody(role),
-      bottomNavigationBar: _buildBottomNav(role),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: _buildAppBar(role, user, unreadCount),
+          drawer: _buildDrawer(context, user, role),
+          body: _buildBody(role),
+          bottomNavigationBar: _buildBottomNav(role),
+        ),
+        if (_isLoggingOut)
+          Positioned.fill(
+            child: ColoredBox(
+              color: AppColors.background,
+              child: const Center(
+                child: CircularProgressIndicator(color: AppColors.primaryLight),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -620,14 +634,26 @@ class _RoleBasedDashboardShellState
                 ),
                 ElevatedButton(
                   onPressed: () async {
+                    if (_isLoggingOut) return;
                     final navigator = Navigator.of(context);
+                    final wasTutor =
+                        dialogRef.read(authNotifierProvider).user?.role ==
+                        UserRole.tutor;
                     Navigator.of(dialogContext).pop();
+                    if (!mounted) return;
+                    setState(() => _isLoggingOut = true);
+
+                    _socketService.off('new_notification');
+                    _socketService.disconnect();
+
                     await dialogRef
                         .read(authNotifierProvider.notifier)
                         .logout();
+                    if (!mounted) return;
                     navigator.pushAndRemoveUntil(
                       MaterialPageRoute(
-                        builder: (_) => const LoginPage(role: 'Student'),
+                        builder: (_) =>
+                            LoginPage(role: wasTutor ? 'Tutor' : 'Student'),
                       ),
                       (route) => false,
                     );

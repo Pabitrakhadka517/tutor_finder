@@ -127,9 +127,10 @@ class _CreateBookingPageState extends ConsumerState<CreateBookingPage> {
 
   void _filterSlotsByDate() {
     _filteredSlots = _allSlots.where((slot) {
-      return slot.startTime.year == _selectedDate.year &&
-          slot.startTime.month == _selectedDate.month &&
-          slot.startTime.day == _selectedDate.day;
+      final local = slot.startTime.toLocal();
+      return local.year == _selectedDate.year &&
+          local.month == _selectedDate.month &&
+          local.day == _selectedDate.day;
     }).toList();
     _selectedSlot = null;
   }
@@ -138,9 +139,8 @@ class _CreateBookingPageState extends ConsumerState<CreateBookingPage> {
   List<DateTime> get _availableDates {
     final dates = <DateTime>{};
     for (final slot in _allSlots) {
-      dates.add(
-        DateTime(slot.startTime.year, slot.startTime.month, slot.startTime.day),
-      );
+      final local = slot.startTime.toLocal();
+      dates.add(DateTime(local.year, local.month, local.day));
     }
     final sorted = dates.toList()..sort();
     return sorted;
@@ -523,7 +523,7 @@ class _CreateBookingPageState extends ConsumerState<CreateBookingPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '${timeFormat.format(slot.startTime)} - ${timeFormat.format(slot.endTime)}',
+                                  '${timeFormat.format(slot.startTime.toLocal())} - ${timeFormat.format(slot.endTime.toLocal())}',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
