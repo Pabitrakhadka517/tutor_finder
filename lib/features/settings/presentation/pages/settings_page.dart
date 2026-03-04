@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../app/routes/app_routes.dart';
 
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../profile/presentation/pages/edit_profile_page.dart';
@@ -222,9 +223,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(ctx).pop();
-              ref.read(authNotifierProvider.notifier).logout();
+              await ref.read(authNotifierProvider.notifier).logout();
+              if (!mounted) return;
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                AppRoutes.roleSelection,
+                (route) => false,
+              );
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Sign Out'),

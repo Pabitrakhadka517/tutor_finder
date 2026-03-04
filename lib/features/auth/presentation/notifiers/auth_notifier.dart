@@ -129,11 +129,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String password,
     String? expectedRole,
+    bool rememberMe = false,
   }) async {
     state = const AuthState.loading();
 
     final result = await loginUseCase.call(
-      LoginParams(email: email, password: password, expectedRole: expectedRole),
+      LoginParams(
+        email: email,
+        password: password,
+        expectedRole: expectedRole,
+        rememberMe: rememberMe,
+      ),
     );
 
     result.fold(

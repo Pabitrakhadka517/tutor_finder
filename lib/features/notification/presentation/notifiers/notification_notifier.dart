@@ -143,8 +143,23 @@ class NotificationNotifier extends StateNotifier<NotificationListState> {
   }
 
   /// Handle incoming notification from raw JSON (for external callers).
+  /// Only adds the notification if it belongs to the current user.
   void addIncomingNotification(Map<String, dynamic> json) {
     try {
+      // Extract recipient ID from the notification
+      final recipientId = json['recipient']?.toString() ?? '';
+
+      // CRITICAL: Only process notifications intended for the current user
+      if (_currentUserId == null || recipientId.isEmpty) {
+        // Cannot verify ownership - skip this notification
+        return;
+      }
+
+      if (recipientId != _currentUserId) {
+        // Notification is not for this user - ignore it
+        return;
+      }
+
       final now = DateTime.now();
       NotificationType notifType;
       try {
@@ -157,7 +172,7 @@ class NotificationNotifier extends StateNotifier<NotificationListState> {
 
       final notification = NotificationEntity.fromRepository(
         id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
-        recipientId: json['recipient']?.toString() ?? '',
+        recipientId: recipientId,
         type: notifType,
         title: json['message']?.toString() ?? 'Notification',
         message: json['message']?.toString(),

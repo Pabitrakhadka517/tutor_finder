@@ -14,6 +14,9 @@ import '../models/forgot_password_response.dart';
 /// data sources.  All token persistence and JWT decoding happen here so the
 /// domain layer stays pure.
 class AuthRepositoryImpl implements AuthRepository {
+  static const String _rememberMeKey = 'remember_me';
+  static const String _isLoggedInKey = 'is_logged_in';
+
   final AuthLocalDataSource localDataSource;
   final AuthRemoteDataSource remoteDataSource;
   final FlutterSecureStorage _secureStorage;
@@ -77,6 +80,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
     String? expectedRole,
+    bool rememberMe = false,
   }) async {
     try {
       final response = await remoteDataSource.login(
@@ -84,6 +88,16 @@ class AuthRepositoryImpl implements AuthRepository {
         password: password,
         expectedRole: expectedRole,
       );
+
+      await _secureStorage.write(
+        key: _rememberMeKey,
+        value: rememberMe ? 'true' : 'false',
+      );
+      await _secureStorage.write(
+        key: _isLoggedInKey,
+        value: rememberMe ? 'true' : 'false',
+      );
+
       return Either.right(response.toEntity());
     } catch (e) {
       return Either.left(
@@ -101,6 +115,8 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await remoteDataSource.logout();
       await localDataSource.removeCurrentUser();
+      await _secureStorage.write(key: _rememberMeKey, value: 'false');
+      await _secureStorage.write(key: _isLoggedInKey, value: 'false');
       return Either.right(null);
     } catch (e) {
       return Either.left(CacheFailure('Failed to logout: ${e.toString()}'));
@@ -161,6 +177,13 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<bool> isAuthenticated() async {
     try {
+      final rememberMe = await _secureStorage.read(key: _rememberMeKey);
+      final isLoggedIn = await _secureStorage.read(key: _isLoggedInKey);
+
+      if (rememberMe != 'true' || isLoggedIn != 'true') {
+        return false;
+      }
+
       final token = await _secureStorage.read(key: 'access_token');
       if (token == null) return false;
       // Consider expired tokens as unauthenticated
@@ -177,6 +200,10 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserRole?> getUserRoleFromToken() async {
     try {
+      final rememberMe = await _secureStorage.read(key: _rememberMeKey);
+      final isLoggedIn = await _secureStorage.read(key: _isLoggedInKey);
+      if (rememberMe != 'true' || isLoggedIn != 'true') return null;
+
       final token = await _secureStorage.read(key: 'access_token');
       if (token == null) return null;
 
@@ -254,5 +281,7 @@ class AuthRepositoryImpl implements AuthRepository {
     await _secureStorage.delete(key: 'user_email');
     await _secureStorage.delete(key: 'user_name');
     await _secureStorage.delete(key: 'user_role');
+    await _secureStorage.write(key: _rememberMeKey, value: 'false');
+    await _secureStorage.write(key: _isLoggedInKey, value: 'false');
   }
 }

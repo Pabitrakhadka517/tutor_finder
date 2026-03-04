@@ -44,6 +44,7 @@ abstract class AuthRepository {
     required String email,
     required String password,
     String? expectedRole,
+    bool rememberMe = false,
   });
 
   /// Logout the current user (invalidates server tokens + clears local)

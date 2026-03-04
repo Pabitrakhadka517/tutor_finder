@@ -25,7 +25,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
 
   @override
   Future<ProfileModel> updateProfile(
-    Map<String, String> fields,
+    Map<String, dynamic> fields,
     File? file,
   ) async {
     try {

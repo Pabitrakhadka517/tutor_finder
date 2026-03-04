@@ -27,6 +27,7 @@ class LoginUseCase implements UseCase<User, LoginParams> {
       email: params.email,
       password: params.password,
       expectedRole: params.expectedRole,
+      rememberMe: params.rememberMe,
     );
   }
 }
@@ -35,6 +36,12 @@ class LoginParams {
   final String email;
   final String password;
   final String? expectedRole;
+  final bool rememberMe;
 
-  LoginParams({required this.email, required this.password, this.expectedRole});
+  LoginParams({
+    required this.email,
+    required this.password,
+    this.expectedRole,
+    this.rememberMe = false,
+  });
 }

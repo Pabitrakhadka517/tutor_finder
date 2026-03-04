@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../providers/profile_providers.dart';
 import '../widgets/profile_image_picker.dart';
 import '../widgets/profile_form_field.dart';
+import '../../location/location.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -22,6 +23,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   File? _selectedImage;
   bool _hasInitializedFields = false;
+
+  // Location data for GPS-detected coordinates
+  double? _latitude;
+  double? _longitude;
 
   @override
   void initState() {
@@ -82,6 +87,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           address: _addressController.text.trim(),
           speciality: _specialityController.text.trim(),
           image: _selectedImage,
+          latitude: _latitude,
+          longitude: _longitude,
         );
 
     if (mounted && !ref.read(profileNotifierProvider).isLoading) {
@@ -190,6 +197,18 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: 16),
+        _buildLocationSection(),
+      ],
+    );
+  }
+
+  Widget _buildLocationSection() {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Address text field
         ProfileFormField(
           controller: _addressController,
           label: 'Address',
@@ -198,7 +217,137 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           validator: _validateAddress,
           textInputAction: TextInputAction.done,
         ),
+        const SizedBox(height: 12),
+
+        // GPS Location Button
+        Consumer(
+          builder: (context, ref, child) {
+            final locationState = ref.watch(locationNotifierProvider);
+            final locationNotifier = ref.read(
+              locationNotifierProvider.notifier,
+            );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Use Current Location Button
+                OutlinedButton.icon(
+                  onPressed: locationState.isLoading
+                      ? null
+                      : () => _detectCurrentLocation(locationNotifier),
+                  icon: locationState.isLoading
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.primary,
+                          ),
+                        )
+                      : Icon(
+                          Icons.my_location,
+                          color: theme.colorScheme.primary,
+                        ),
+                  label: Text(
+                    locationState.isLoading
+                        ? locationState.statusMessage
+                        : 'Use Current Location',
+                    style: TextStyle(color: theme.colorScheme.primary),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(color: theme.colorScheme.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+
+                // Status messages
+                if (locationState.hasError)
+                  _buildLocationError(locationState, locationNotifier, theme),
+
+                if (_latitude != null && _longitude != null)
+                  _buildCoordinatesInfo(theme),
+              ],
+            );
+          },
+        ),
       ],
+    );
+  }
+
+  Future<void> _detectCurrentLocation(LocationNotifier notifier) async {
+    await notifier.detectLocation(saveToServer: false);
+
+    final state = ref.read(locationNotifierProvider);
+    if (state.hasLocation && mounted) {
+      setState(() {
+        _addressController.text = state.location!.fullAddress;
+        _latitude = state.location!.latitude;
+        _longitude = state.location!.longitude;
+      });
+    }
+  }
+
+  Widget _buildLocationError(
+    LocationState state,
+    LocationNotifier notifier,
+    ThemeData theme,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, size: 18, color: theme.colorScheme.error),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                state.errorMessage ?? 'Location error',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ),
+            if (state.shouldOpenSettings)
+              TextButton(
+                onPressed: () {
+                  if (state.permissionStatus ==
+                      LocationPermissionStatus.serviceDisabled) {
+                    notifier.openLocationSettings();
+                  } else {
+                    notifier.openAppSettings();
+                  }
+                },
+                child: const Text('Settings'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCoordinatesInfo(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            'GPS: ${_latitude!.toStringAsFixed(4)}, ${_longitude!.toStringAsFixed(4)}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

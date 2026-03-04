@@ -27,9 +27,11 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     // 2. Try Cache First
     final cachedResult = await getCachedProfileUseCase(const NoParams());
     cachedResult.fold(
-      (failure) { /* Ignore cache failure, wait for remote */ },
+      (failure) {
+        /* Ignore cache failure, wait for remote */
+      },
       (profile) {
-        // If we found a cached profile, show it immediately, but keep loading true 
+        // If we found a cached profile, show it immediately, but keep loading true
         // because we are fetching fresh data.
         state = state.copyWith(profile: profile, isLoading: true);
       },
@@ -57,6 +59,8 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     required String speciality,
     required String address,
     File? image, // File object from ImagePicker
+    double? latitude,
+    double? longitude,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     final params = UpdateProfileParams(
@@ -65,10 +69,13 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       speciality: speciality,
       address: address,
       image: image,
+      latitude: latitude,
+      longitude: longitude,
     );
     final result = await updateProfileUseCase(params);
     result.fold(
-      (failure) => state = state.copyWith(isLoading: false, error: failure.message),
+      (failure) =>
+          state = state.copyWith(isLoading: false, error: failure.message),
       (profile) => state = state.copyWith(isLoading: false, profile: profile),
     );
   }

@@ -115,6 +115,11 @@ dependencies:
   path_provider: ^2.1.2
   path: ^1.9.0
 
+  # Location & GPS
+  geolocator: ^13.0.2
+  geocoding: ^3.0.0
+  permission_handler: ^11.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

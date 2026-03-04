@@ -48,13 +48,17 @@ class ProfileRepositoryImpl implements IProfileRepository {
     required String speciality,
     required String address,
     File? image,
+    double? latitude,
+    double? longitude,
   }) async {
     try {
-      final fields = {
+      final fields = <String, dynamic>{
         'name': name,
         'phone': phone,
         'speciality': speciality,
         'address': address,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
       };
 
       final updatedProfile = await remoteDataSource.updateProfile(

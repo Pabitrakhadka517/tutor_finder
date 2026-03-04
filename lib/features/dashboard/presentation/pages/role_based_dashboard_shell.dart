@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/routes/app_routes.dart';
 
 import '../../../../core/services/socket/socket_service.dart';
 import '../../../admin/presentation/pages/admin_users_page.dart';
 import '../../../admin/presentation/pages/announcements_page.dart';
 import '../../../auth/domain/entities/user.dart';
-import '../../../auth/presentation/pages/login_page.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/presentation/pages/booking_list_page.dart';
 import '../../../chat/presentation/pages/chat_list_page.dart';
@@ -54,6 +54,12 @@ class _RoleBasedDashboardShellState
   }
 
   Future<void> _initSocketNotifications() async {
+    // Set current user for notification filtering BEFORE connecting
+    final userId = ref.read(authNotifierProvider).user?.id;
+    if (userId != null) {
+      ref.read(notificationNotifierProvider.notifier).setCurrentUser(userId);
+    }
+
     await _socketService.connect();
     _socketService.onNewNotification((data) {
       if (!mounted) return;
@@ -636,9 +642,6 @@ class _RoleBasedDashboardShellState
                   onPressed: () async {
                     if (_isLoggingOut) return;
                     final navigator = Navigator.of(context);
-                    final wasTutor =
-                        dialogRef.read(authNotifierProvider).user?.role ==
-                        UserRole.tutor;
                     Navigator.of(dialogContext).pop();
                     if (!mounted) return;
                     setState(() => _isLoggingOut = true);
@@ -650,11 +653,8 @@ class _RoleBasedDashboardShellState
                         .read(authNotifierProvider.notifier)
                         .logout();
                     if (!mounted) return;
-                    navigator.pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            LoginPage(role: wasTutor ? 'Tutor' : 'Student'),
-                      ),
+                    navigator.pushNamedAndRemoveUntil(
+                      AppRoutes.roleSelection,
                       (route) => false,
                     );
                   },
