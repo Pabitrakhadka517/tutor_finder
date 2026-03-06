@@ -1,14 +1,19 @@
 import 'package:equatable/equatable.dart';
 
-/// User role enum
-enum UserRole { student, admin, tutor }
+/// User role enum – mirrors the roles recognised by the backend.
+enum UserRole { student, tutor, admin }
 
-/// Domain Entity representing a User
-/// This is framework-independent and contains only business logic
+/// Pure domain entity representing a User.
+///
+/// Framework-independent – no Flutter, Hive, or HTTP dependencies.
+/// All business rules related to the user concept live here.
 class User extends Equatable {
   final String id;
   final String email;
-  final String name;
+
+  /// Display name (full name) of the user.
+  final String fullName;
+
   final UserRole role;
   final String? token;
   final String? refreshToken;
@@ -17,18 +22,30 @@ class User extends Equatable {
   const User({
     required this.id,
     required this.email,
-    required this.name,
+    required this.fullName,
     this.role = UserRole.student,
     this.token,
     this.refreshToken,
     required this.createdAt,
   });
 
-  /// Copy with method for immutability
+  /// Convenience alias – many widgets still reference `user.name`.
+  String get name => fullName;
+
+  /// Whether this user is a student.
+  bool get isStudent => role == UserRole.student;
+
+  /// Whether this user is a tutor.
+  bool get isTutor => role == UserRole.tutor;
+
+  /// Whether this user is an admin.
+  bool get isAdmin => role == UserRole.admin;
+
+  /// Copy with method for immutability.
   User copyWith({
     String? id,
     String? email,
-    String? name,
+    String? fullName,
     UserRole? role,
     String? token,
     String? refreshToken,
@@ -37,7 +54,7 @@ class User extends Equatable {
     return User(
       id: id ?? this.id,
       email: email ?? this.email,
-      name: name ?? this.name,
+      fullName: fullName ?? this.fullName,
       role: role ?? this.role,
       token: token ?? this.token,
       refreshToken: refreshToken ?? this.refreshToken,
@@ -49,7 +66,7 @@ class User extends Equatable {
   List<Object?> get props => [
     id,
     email,
-    name,
+    fullName,
     role,
     token,
     refreshToken,

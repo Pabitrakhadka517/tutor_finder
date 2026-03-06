@@ -9,6 +9,7 @@ class ProfileEntity extends Equatable {
   final String speciality;
   final String address;
   final String? profileImage;
+  final String theme; // 'light' | 'dark' | 'system'
 
   const ProfileEntity({
     required this.id,
@@ -19,8 +20,9 @@ class ProfileEntity extends Equatable {
     required this.speciality,
     required this.address,
     this.profileImage,
+    this.theme = 'light',
   });
 
   @override
-  List<Object?> get props => [id, email, role, name, phone, speciality, address, profileImage];
+  List<Object?> get props => [id, email, role, name, phone, speciality, address, profileImage, theme];
 }

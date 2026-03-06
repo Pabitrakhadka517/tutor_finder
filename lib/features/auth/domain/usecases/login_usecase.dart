@@ -26,6 +26,8 @@ class LoginUseCase implements UseCase<User, LoginParams> {
     return await repository.login(
       email: params.email,
       password: params.password,
+      expectedRole: params.expectedRole,
+      rememberMe: params.rememberMe,
     );
   }
 }
@@ -33,6 +35,13 @@ class LoginUseCase implements UseCase<User, LoginParams> {
 class LoginParams {
   final String email;
   final String password;
+  final String? expectedRole;
+  final bool rememberMe;
 
-  LoginParams({required this.email, required this.password});
+  LoginParams({
+    required this.email,
+    required this.password,
+    this.expectedRole,
+    this.rememberMe = false,
+  });
 }

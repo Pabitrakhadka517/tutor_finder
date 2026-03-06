@@ -1,0 +1,566 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../../booking/presentation/pages/create_booking_page.dart';
+import '../../../review/presentation/pages/tutor_reviews_page.dart';
+import '../../../chat/presentation/pages/chat_room_page.dart';
+import '../../../chat/presentation/providers/chat_providers.dart';
+import '../../domain/entities/availability_slot_entity.dart';
+import '../providers/tutor_providers.dart';
+
+class TutorDetailPage extends ConsumerStatefulWidget {
+  final String tutorId;
+
+  const TutorDetailPage({super.key, required this.tutorId});
+
+  @override
+  ConsumerState<TutorDetailPage> createState() => _TutorDetailPageState();
+}
+
+class _TutorDetailPageState extends ConsumerState<TutorDetailPage> {
+  List<AvailabilitySlotEntity> _availableSlots = [];
+  bool _isLoadingSlots = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(tutorDetailNotifierProvider.notifier).fetchTutor(widget.tutorId);
+      _loadAvailability();
+    });
+  }
+
+  Future<void> _loadAvailability() async {
+    setState(() => _isLoadingSlots = true);
+    final repo = ref.read(tutorRepositoryProvider);
+    final result = await repo.getTutorAvailability(widget.tutorId);
+    if (!mounted) return;
+    result.fold((_) => setState(() => _isLoadingSlots = false), (slots) {
+      final now = DateTime.now();
+      final available =
+          slots.where((s) => !s.isBooked && s.startTime.isAfter(now)).toList()
+            ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      setState(() {
+        _isLoadingSlots = false;
+        _availableSlots = available;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(tutorDetailNotifierProvider);
+
+    return Scaffold(
+      backgroundColor: Colors.blue.shade50,
+      body: state.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : state.errorMessage != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(state.errorMessage!),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref
+                        .read(tutorDetailNotifierProvider.notifier)
+                        .fetchTutor(widget.tutorId),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : state.tutor == null
+          ? const Center(child: Text('Tutor not found'))
+          : _buildTutorDetail(context),
+    );
+  }
+
+  Widget _buildTutorDetail(BuildContext context) {
+    final tutor = ref.read(tutorDetailNotifierProvider).tutor!;
+
+    return CustomScrollView(
+      slivers: [
+        // Sliver AppBar with tutor image
+        SliverAppBar(
+          expandedHeight: 200,
+          pinned: true,
+          backgroundColor: Colors.blue.shade700,
+          flexibleSpace: FlexibleSpaceBar(
+            title: Text(
+              tutor.fullName,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            background: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue.shade700, Colors.blue.shade400],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: Center(
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.white,
+                  backgroundImage: tutor.profileImage != null
+                      ? NetworkImage(tutor.profileImage!)
+                      : null,
+                  child: tutor.profileImage == null
+                      ? Text(
+                          tutor.fullName.isNotEmpty
+                              ? tutor.fullName[0].toUpperCase()
+                              : 'T',
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Verification badge
+                if (tutor.verificationStatus == 'VERIFIED')
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.green),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.verified, color: Colors.green, size: 16),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Verified Tutor',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
+
+                // Stats row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatChip(
+                      Icons.star,
+                      Colors.amber,
+                      tutor.averageRating.toStringAsFixed(1),
+                      '${tutor.totalReviews} reviews',
+                    ),
+                    _buildStatChip(
+                      Icons.school,
+                      Colors.blue,
+                      '${tutor.experienceYears}',
+                      'Years exp.',
+                    ),
+                    _buildStatChip(
+                      Icons.people,
+                      Colors.purple,
+                      '${tutor.totalClasses}',
+                      'Classes',
+                    ),
+                    _buildStatChip(
+                      Icons.attach_money,
+                      Colors.green,
+                      'Rs.${tutor.hourlyRate.toStringAsFixed(0)}',
+                      'per hour',
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // Bio
+                if (tutor.bio != null && tutor.bio!.isNotEmpty) ...[
+                  _sectionTitle('About'),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      tutor.bio!,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // Subjects
+                if (tutor.subjects.isNotEmpty) ...[
+                  _sectionTitle('Subjects'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: tutor.subjects
+                        .map(
+                          (s) => Chip(
+                            label: Text(s),
+                            backgroundColor: Colors.blue.shade50,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // Languages
+                if (tutor.languages.isNotEmpty) ...[
+                  _sectionTitle('Languages'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: tutor.languages
+                        .map(
+                          (l) => Chip(
+                            label: Text(l),
+                            backgroundColor: Colors.green.shade50,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // Contact Info
+                _sectionTitle('Contact'),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      _infoRow(Icons.email, tutor.email),
+                      if (tutor.phone != null && tutor.phone!.isNotEmpty) ...[
+                        const Divider(height: 16),
+                        _infoRow(Icons.phone, tutor.phone!),
+                      ],
+                      if (tutor.address != null &&
+                          tutor.address!.isNotEmpty) ...[
+                        const Divider(height: 16),
+                        _infoRow(Icons.location_on, tutor.address!),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // View Reviews button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              TutorReviewsPage(tutorId: tutor.id),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.rate_review),
+                    label: Text('View Reviews (${tutor.totalReviews})'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Message Tutor button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        _startChat(context, ref, tutor.id, tutor.fullName),
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: const Text('Message Tutor'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.teal,
+                      side: const BorderSide(color: Colors.teal),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Availability section
+                _sectionTitle('Available Slots'),
+                const SizedBox(height: 8),
+                if (_isLoadingSlots)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                else if (_availableSlots.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          color: Colors.orange.shade400,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'No available slots. Message the tutor to arrange a time.',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ..._availableSlots.take(5).map((slot) {
+                          final dateFormat = DateFormat('EEE, MMM d');
+                          final timeFormat = DateFormat('hh:mm a');
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.event_available,
+                                  color: Colors.green,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  dateFormat.format(slot.startTime),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${timeFormat.format(slot.startTime)} - ${timeFormat.format(slot.endTime)}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                        if (_availableSlots.length > 5)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              '+${_availableSlots.length - 5} more slots',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
+
+                // Book Now button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => CreateBookingPage(tutor: tutor),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.calendar_today),
+                    label: const Text('Book a Session'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatChip(
+    IconData icon,
+    Color color,
+    String value,
+    String label,
+  ) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue.shade900,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+        ),
+      ],
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.blue.shade900,
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.blue.shade700),
+        const SizedBox(width: 12),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
+      ],
+    );
+  }
+
+  /// Create or fetch existing chat with the tutor, then navigate to ChatRoomPage
+  Future<void> _startChat(
+    BuildContext context,
+    WidgetRef ref,
+    String tutorId,
+    String tutorName,
+  ) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final chatId = await ref
+          .read(chatListNotifierProvider.notifier)
+          .createChat(tutorId);
+      if (context.mounted) {
+        Navigator.of(context).pop(); // dismiss loading
+        if (chatId != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) =>
+                  ChatRoomPage(chatId: chatId, recipientName: tutorName),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not start chat. Please try again.'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // dismiss loading
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      }
+    }
+  }
+}

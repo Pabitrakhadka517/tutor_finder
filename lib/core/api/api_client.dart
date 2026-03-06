@@ -82,6 +82,21 @@ class ApiClient {
     );
   }
 
+  // PATCH request
+  Future<Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return _dio.patch(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
   // DELETE request
   Future<Response> delete(
     String path, {
@@ -102,13 +117,27 @@ class ApiClient {
 class _AuthInterceptor extends Interceptor {
   final _storage = const FlutterSecureStorage();
 
+  /// Endpoints that do NOT need a Bearer token.
+  /// Note: /auth/logout and /auth/me DO require authentication.
+  static const _publicAuthPaths = [
+    '/auth/register',
+    '/auth/login',
+    '/auth/refresh',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+  ];
+
+  bool _isPublicAuthPath(String path) {
+    return _publicAuthPaths.any((p) => path.contains(p));
+  }
+
   @override
   void onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Skip adding token for auth endpoints
-    if (options.path.contains('/auth/')) {
+    // Only skip token for truly public auth endpoints
+    if (_isPublicAuthPath(options.path)) {
       return handler.next(options);
     }
 
@@ -122,10 +151,48 @@ class _AuthInterceptor extends Interceptor {
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
     // Handle 401 Unauthorized - Token expired
-    if (err.response?.statusCode == 401) {
-      // TODO: Implement token refresh or logout
+    if (err.response?.statusCode == 401 &&
+        !_isPublicAuthPath(err.requestOptions.path)) {
+      try {
+        final refreshToken = await _storage.read(key: 'refresh_token');
+        if (refreshToken == null) {
+          return handler.next(err);
+        }
+
+        // Attempt to refresh the token
+        final dio = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl));
+        final response = await dio.post(
+          ApiEndpoints.refreshToken,
+          data: {'refreshToken': refreshToken},
+        );
+
+        if (response.statusCode == 200 && response.data != null) {
+          // Backend returns accessToken / refreshToken (camelCase)
+          final newAccessToken =
+              response.data['accessToken'] ?? response.data['access_token'];
+          final newRefreshToken =
+              response.data['refreshToken'] ?? response.data['refresh_token'];
+
+          if (newAccessToken != null) {
+            await _storage.write(key: 'access_token', value: newAccessToken);
+          }
+          if (newRefreshToken != null) {
+            await _storage.write(key: 'refresh_token', value: newRefreshToken);
+          }
+
+          // Retry the original request with new token
+          final opts = err.requestOptions;
+          opts.headers['Authorization'] = 'Bearer $newAccessToken';
+          final retryResponse = await dio.fetch(opts);
+          return handler.resolve(retryResponse);
+        }
+      } catch (_) {
+        // Refresh failed - clear tokens
+        await _storage.delete(key: 'access_token');
+        await _storage.delete(key: 'refresh_token');
+      }
     }
     return handler.next(err);
   }

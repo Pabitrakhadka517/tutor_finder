@@ -25,7 +25,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
 
   @override
   Future<ProfileModel> updateProfile(
-    Map<String, String> fields,
+    Map<String, dynamic> fields,
     File? file,
   ) async {
     try {
@@ -56,6 +56,37 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       return ProfileModel.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to update profile: $e');
+    }
+  }
+
+  @override
+  Future<ProfileModel> updateTheme(String theme) async {
+    try {
+      final response = await apiClient.patch(
+        ApiEndpoints.updateTheme,
+        data: {'theme': theme},
+      );
+
+      if (response.data is Map && response.data.containsKey('profile')) {
+        return ProfileModel.fromJson(response.data['profile']);
+      }
+      return ProfileModel.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to update theme: $e');
+    }
+  }
+
+  @override
+  Future<ProfileModel> deleteProfileImage() async {
+    try {
+      final response = await apiClient.delete(ApiEndpoints.deleteProfileImage);
+
+      if (response.data is Map && response.data.containsKey('profile')) {
+        return ProfileModel.fromJson(response.data['profile']);
+      }
+      return ProfileModel.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to delete profile image: $e');
     }
   }
 }

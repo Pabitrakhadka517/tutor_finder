@@ -52,5 +52,6 @@ final profileNotifierProvider = StateNotifierProvider<ProfileNotifier, ProfileSt
     getProfileUseCase: ref.read(getProfileUseCaseProvider),
     getCachedProfileUseCase: ref.read(getCachedProfileUseCaseProvider),
     updateProfileUseCase: ref.read(updateProfileUseCaseProvider),
+    profileRepository: ref.read(profileRepositoryProvider),
   );
 });

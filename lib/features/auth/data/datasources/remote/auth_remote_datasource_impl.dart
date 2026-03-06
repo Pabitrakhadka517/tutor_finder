@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../../core/api/api_client.dart';
 import '../../../../../core/api/api_endpoints.dart';
 import '../../models/auth_request_model.dart';
 import '../../models/auth_response_model.dart';
+import '../../models/forgot_password_response.dart';
 import '../auth_remote_datasource.dart';
 
 final authRemoteDatasourceProvider = Provider<AuthRemoteDataSourceImpl>((ref) {
@@ -20,25 +22,43 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   AuthRemoteDataSourceImpl({required ApiClient apiClient})
     : _apiClient = apiClient;
 
-  /// ========== REGISTER STUDENT ==========
+  // ─── Unified Sign-Up ──────────────────────────────────────────
+
+  /// Routes to the correct backend endpoint based on [role].
   @override
-  Future<AuthResponseModel> register({
+  Future<AuthResponseModel> signUp({
     required String email,
     required String password,
+    required String role,
   }) async {
     try {
       final requestModel = AuthRequestModel(email: email, password: password);
 
+      // Pick the right endpoint based on role
+      final String endpoint;
+      switch (role.toLowerCase()) {
+        case 'tutor':
+          endpoint = ApiEndpoints.registerTutor;
+          break;
+        case 'admin':
+          endpoint = ApiEndpoints.registerAdmin;
+          break;
+        case 'student':
+        default:
+          endpoint = ApiEndpoints.register;
+          break;
+      }
+
       final response = await _apiClient.post(
-        ApiEndpoints.register,
+        endpoint,
         data: requestModel.toJson(),
       );
 
       final authResponse = AuthResponseModel.fromJson(response.data);
 
-      // Save token if returned
       if (authResponse.token != null) {
         await _saveTokens(authResponse.token!, authResponse.refreshToken);
+        await _saveUserData(authResponse);
       }
 
       return authResponse;
@@ -46,67 +66,43 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw _handleDioError(e);
     }
   }
+
+  // ─── Legacy per-role methods (delegates to signUp) ────────────
+
+  /// ========== REGISTER STUDENT ==========
+  @override
+  Future<AuthResponseModel> register({
+    required String email,
+    required String password,
+  }) => signUp(email: email, password: password, role: 'student');
 
   /// ========== REGISTER ADMIN ==========
   @override
   Future<AuthResponseModel> registerAdmin({
     required String email,
     required String password,
-  }) async {
-    try {
-      final requestModel = AuthRequestModel(email: email, password: password);
-
-      final response = await _apiClient.post(
-        ApiEndpoints.registerAdmin,
-        data: requestModel.toJson(),
-      );
-
-      final authResponse = AuthResponseModel.fromJson(response.data);
-
-      if (authResponse.token != null) {
-        await _saveTokens(authResponse.token!, authResponse.refreshToken);
-      }
-
-      return authResponse;
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    }
-  }
+  }) => signUp(email: email, password: password, role: 'admin');
 
   /// ========== REGISTER TUTOR ==========
   @override
   Future<AuthResponseModel> registerTutor({
     required String email,
     required String password,
-  }) async {
-    try {
-      final requestModel = AuthRequestModel(email: email, password: password);
-
-      final response = await _apiClient.post(
-        ApiEndpoints.registerTutor,
-        data: requestModel.toJson(),
-      );
-
-      final authResponse = AuthResponseModel.fromJson(response.data);
-
-      if (authResponse.token != null) {
-        await _saveTokens(authResponse.token!, authResponse.refreshToken);
-      }
-
-      return authResponse;
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    }
-  }
+  }) => signUp(email: email, password: password, role: 'tutor');
 
   /// ========== LOGIN ==========
   @override
   Future<AuthResponseModel> login({
     required String email,
     required String password,
+    String? expectedRole,
   }) async {
     try {
-      final requestModel = AuthRequestModel(email: email, password: password);
+      final requestModel = AuthRequestModel(
+        email: email,
+        password: password,
+        expectedRole: expectedRole,
+      );
 
       final response = await _apiClient.post(
         ApiEndpoints.login,
@@ -133,6 +129,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<bool> logout() async {
     try {
+      // Call server to invalidate refresh token
+      final refreshToken = await _secureStorage.read(key: 'refresh_token');
+      if (refreshToken != null) {
+        try {
+          await _apiClient.post(
+            ApiEndpoints.logout,
+            data: {'refreshToken': refreshToken},
+          );
+        } catch (_) {
+          // Server logout failed, still clear local data
+        }
+      }
+
       // Clear all stored data
       await _secureStorage.delete(key: 'access_token');
       await _secureStorage.delete(key: 'refresh_token');
@@ -143,6 +152,79 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  /// ========== FORGOT PASSWORD ==========
+  @override
+  Future<ForgotPasswordResponse> forgotPassword(String email) async {
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.forgotPassword,
+        data: {'email': email},
+      );
+      return ForgotPasswordResponse.fromJson(
+        response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : <String, dynamic>{},
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// ========== RESET PASSWORD ==========
+  @override
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      await _apiClient.post(
+        ApiEndpoints.resetPassword,
+        data: {'token': token, 'newPassword': newPassword},
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// ========== REFRESH TOKEN ==========
+  @override
+  Future<AuthResponseModel> refreshToken() async {
+    try {
+      final currentRefreshToken = await _secureStorage.read(
+        key: 'refresh_token',
+      );
+      if (currentRefreshToken == null) {
+        throw Exception('No refresh token found');
+      }
+
+      final response = await _apiClient.post(
+        ApiEndpoints.refreshToken,
+        data: {'refreshToken': currentRefreshToken},
+      );
+
+      final authResponse = AuthResponseModel.fromJson(response.data);
+
+      if (authResponse.token != null) {
+        await _saveTokens(authResponse.token!, authResponse.refreshToken);
+      }
+
+      return authResponse;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// ========== GET CURRENT USER ==========
+  @override
+  Future<AuthResponseModel> getCurrentUser() async {
+    try {
+      final response = await _apiClient.get(ApiEndpoints.me);
+      return AuthResponseModel.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
     }
   }
 
@@ -203,6 +285,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         }
 
       case DioExceptionType.connectionError:
+        if (kIsWeb) {
+          return Exception(
+            'Cannot reach the server. This may be a CORS issue. '
+            'Ensure the backend allows cross-origin requests, '
+            'or run with: flutter run -d chrome --web-browser-flag="--disable-web-security"',
+          );
+        }
         return Exception('No internet connection');
 
       case DioExceptionType.cancel:

@@ -12,6 +12,8 @@ class UpdateProfileParams extends Equatable {
   final String speciality;
   final String address;
   final File? image;
+  final double? latitude;
+  final double? longitude;
 
   const UpdateProfileParams({
     required this.name,
@@ -19,13 +21,24 @@ class UpdateProfileParams extends Equatable {
     required this.speciality,
     required this.address,
     this.image,
+    this.latitude,
+    this.longitude,
   });
 
   @override
-  List<Object?> get props => [name, phone, speciality, address, image];
+  List<Object?> get props => [
+    name,
+    phone,
+    speciality,
+    address,
+    image,
+    latitude,
+    longitude,
+  ];
 }
 
-class UpdateProfileUseCase implements UseCase<ProfileEntity, UpdateProfileParams> {
+class UpdateProfileUseCase
+    implements UseCase<ProfileEntity, UpdateProfileParams> {
   final IProfileRepository repository;
 
   UpdateProfileUseCase(this.repository);
@@ -38,6 +51,8 @@ class UpdateProfileUseCase implements UseCase<ProfileEntity, UpdateProfileParams
       speciality: params.speciality,
       address: params.address,
       image: params.image,
+      latitude: params.latitude,
+      longitude: params.longitude,
     );
   }
 }

@@ -5,7 +5,6 @@ import '../../domain/entities/profile_entity.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../datasources/profile_local_data_source.dart';
 import '../datasources/profile_remote_data_source.dart';
-import '../models/profile_model.dart';
 
 class ProfileRepositoryImpl implements IProfileRepository {
   final ProfileRemoteDataSource remoteDataSource;
@@ -49,13 +48,17 @@ class ProfileRepositoryImpl implements IProfileRepository {
     required String speciality,
     required String address,
     File? image,
+    double? latitude,
+    double? longitude,
   }) async {
     try {
-      final fields = {
+      final fields = <String, dynamic>{
         'name': name,
         'phone': phone,
         'speciality': speciality,
         'address': address,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
       };
 
       final updatedProfile = await remoteDataSource.updateProfile(
@@ -73,6 +76,32 @@ class ProfileRepositoryImpl implements IProfileRepository {
     } catch (e, stackTrace) {
       print('PLEASE LOOK HERE - ERROR UPDATING PROFILE: $e');
       print('Stack Trace: $stackTrace');
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ProfileEntity>> updateTheme(String theme) async {
+    try {
+      final updatedProfile = await remoteDataSource.updateTheme(theme);
+      try {
+        await localDataSource.cacheProfile(updatedProfile);
+      } catch (_) {}
+      return Right(updatedProfile);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ProfileEntity>> deleteProfileImage() async {
+    try {
+      final updatedProfile = await remoteDataSource.deleteProfileImage();
+      try {
+        await localDataSource.cacheProfile(updatedProfile);
+      } catch (_) {}
+      return Right(updatedProfile);
+    } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
   }
