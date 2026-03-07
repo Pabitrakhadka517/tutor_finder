@@ -48,7 +48,13 @@ void main() {
         ),
         socketServiceProvider.overrideWithValue(_FakeSocketService()),
       ],
-      child: const MaterialApp(home: RoleBasedDashboardShell()),
+      child: MaterialApp(
+        home: const RoleBasedDashboardShell(),
+        routes: {
+          '/role-selection': (_) =>
+              const Scaffold(body: Text('Role Selection Test Page')),
+        },
+      ),
     );
   }
 
@@ -76,7 +82,7 @@ void main() {
   }
 
   group('RoleBasedDashboardShell logout redirect', () {
-    testWidgets('redirects tutor to Tutor login page on logout', (
+    testWidgets('redirects tutor to role selection page on logout', (
       tester,
     ) async {
       await tester.pumpWidget(createWidgetUnderTest(UserRole.tutor));
@@ -84,10 +90,10 @@ void main() {
 
       await _logoutFromDrawer(tester);
 
-      expect(find.text('Login as Tutor'), findsOneWidget);
+      expect(find.text('Role Selection Test Page'), findsOneWidget);
     });
 
-    testWidgets('keeps student redirect to Student login page on logout', (
+    testWidgets('redirects student to role selection page on logout', (
       tester,
     ) async {
       await tester.pumpWidget(createWidgetUnderTest(UserRole.student));
@@ -95,7 +101,7 @@ void main() {
 
       await _logoutFromDrawer(tester);
 
-      expect(find.text('Login as Student'), findsOneWidget);
+      expect(find.text('Role Selection Test Page'), findsOneWidget);
     });
   });
 }
