@@ -171,7 +171,7 @@ class _AvailabilityManagementPageState
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Slot added!'),
-              backgroundColor: Colors.green,
+              backgroundColor: Colors.blue,
             ),
           );
           _loadAvailability(); // Refresh list
@@ -189,7 +189,7 @@ class _AvailabilityManagementPageState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage Availability'),
-        backgroundColor: Colors.green.shade700,
+        backgroundColor: Colors.blue.shade700,
         foregroundColor: Colors.white,
       ),
       body: _isLoading
@@ -250,7 +250,7 @@ class _AvailabilityManagementPageState
                         ? Colors.orange.shade50
                         : isPast
                         ? Colors.grey.shade100
-                        : Colors.green.shade50,
+                        : Colors.blue.shade50,
                     child: ListTile(
                       leading: Icon(
                         slot.isBooked
@@ -262,7 +262,7 @@ class _AvailabilityManagementPageState
                             ? Colors.orange
                             : isPast
                             ? Colors.grey
-                            : Colors.green,
+                            : Colors.blue,
                       ),
                       title: Text(
                         dateFormat.format(slot.startTime.toLocal()),
@@ -287,7 +287,7 @@ class _AvailabilityManagementPageState
                                 fontSize: 12,
                               ),
                             )
-                          : const Icon(Icons.check_circle, color: Colors.green),
+                          : const Icon(Icons.check_circle, color: Colors.blue),
                     ),
                   );
                 },
@@ -307,7 +307,7 @@ class _AvailabilityManagementPageState
             )
           : FloatingActionButton(
               onPressed: _addNewSlot,
-              backgroundColor: Colors.green.shade700,
+              backgroundColor: Colors.blue.shade700,
               child: const Icon(Icons.add, color: Colors.white),
             ),
     );

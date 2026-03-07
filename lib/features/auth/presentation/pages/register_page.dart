@@ -46,11 +46,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               .read(authNotifierProvider.notifier)
               .registerTutor(email: email, password: password);
           break;
-        case "Admin":
-          ref
-              .read(authNotifierProvider.notifier)
-              .registerAdmin(email: email, password: password);
-          break;
         case "Student":
         default:
           ref

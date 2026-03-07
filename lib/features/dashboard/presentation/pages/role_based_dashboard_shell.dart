@@ -4,8 +4,6 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/routes/app_routes.dart';
 
 import '../../../../core/services/socket/socket_service.dart';
-import '../../../admin/presentation/pages/admin_users_page.dart';
-import '../../../admin/presentation/pages/announcements_page.dart';
 import '../../../auth/domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/presentation/pages/booking_list_page.dart';
@@ -17,7 +15,6 @@ import '../../../study/presentation/pages/study_resources_page.dart';
 import '../../../tutor/presentation/pages/tutor_list_page.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
 import 'wallet_page.dart';
-import 'admin_dashboard_page.dart';
 import 'student_dashboard_page.dart';
 import 'tutor_dashboard_page.dart';
 
@@ -181,7 +178,7 @@ class _RoleBasedDashboardShellState
         case UserRole.tutor:
           return const TutorDashboardPage();
         case UserRole.admin:
-          return const AdminDashboardPage();
+          return const StudentDashboardPage();
       }
     }
 
@@ -196,7 +193,7 @@ class _RoleBasedDashboardShellState
       case UserRole.tutor:
         return _tutorTabContent(index);
       case UserRole.admin:
-        return _adminTabContent(index);
+        return _studentTabContent(index);
     }
   }
 
@@ -223,19 +220,6 @@ class _RoleBasedDashboardShellState
         return const ProfilePage();
       default:
         return const TutorDashboardPage();
-    }
-  }
-
-  Widget _adminTabContent(int index) {
-    switch (index) {
-      case 1:
-        return const AdminUsersPage();
-      case 2:
-        return const AnnouncementsPage();
-      case 3:
-        return const ProfilePage();
-      default:
-        return const AdminDashboardPage();
     }
   }
 
@@ -317,16 +301,16 @@ class _RoleBasedDashboardShellState
       case UserRole.admin:
         return const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_rounded),
-            label: 'Overview',
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.people_rounded),
-            label: 'Users',
+            icon: Icon(Icons.search_rounded),
+            label: 'Tutors',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.campaign_rounded),
-            label: 'Announce',
+            icon: Icon(Icons.calendar_today_rounded),
+            label: 'Bookings',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_rounded),
@@ -547,21 +531,39 @@ class _RoleBasedDashboardShellState
         ];
       case UserRole.admin:
         return [
-          _drawerItem(Icons.dashboard_rounded, 'Overview', () {
+          _drawerItem(Icons.home_rounded, 'Dashboard', () {
             Navigator.pop(context);
             setState(() => _selectedIndex = 0);
           }),
-          _drawerItem(Icons.people_rounded, 'User Management', () {
+          _drawerItem(Icons.search_rounded, 'Find Tutors', () {
             Navigator.pop(context);
             Navigator.of(
               context,
-            ).push(MaterialPageRoute(builder: (_) => const AdminUsersPage()));
+            ).push(MaterialPageRoute(builder: (_) => const TutorListPage()));
           }),
-          _drawerItem(Icons.campaign_rounded, 'Announcements', () {
+          _drawerItem(Icons.calendar_today_rounded, 'My Bookings', () {
+            Navigator.pop(context);
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const BookingListPage()));
+          }),
+          _drawerItem(Icons.menu_book_rounded, 'Study Materials', () {
             Navigator.pop(context);
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AnnouncementsPage()),
+              MaterialPageRoute(builder: (_) => const StudyResourcesPage()),
             );
+          }),
+          _drawerItem(Icons.chat_rounded, 'Messages', () {
+            Navigator.pop(context);
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ChatListPage()));
+          }),
+          _drawerItem(Icons.account_balance_wallet_rounded, 'Wallet', () {
+            Navigator.pop(context);
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const WalletPage()));
           }),
           _drawerItem(Icons.notifications_rounded, 'Notifications', () {
             Navigator.pop(context);
@@ -573,7 +575,7 @@ class _RoleBasedDashboardShellState
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Text(
-              'View As',
+              'Admin role detected',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -581,18 +583,12 @@ class _RoleBasedDashboardShellState
               ),
             ),
           ),
-          _drawerItem(Icons.person_rounded, 'Student View', () {
+          _drawerItem(Icons.info_outline_rounded, 'Admin panel removed', () {
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Student View - Admin preview mode'),
+                content: Text('Admin features are disabled in this app build.'),
               ),
-            );
-          }),
-          _drawerItem(Icons.school_rounded, 'Tutor View', () {
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Tutor View - Admin preview mode')),
             );
           }),
         ];
@@ -684,7 +680,7 @@ class _RoleBasedDashboardShellState
       case UserRole.tutor:
         return 'Tutor Dashboard';
       case UserRole.admin:
-        return 'Admin Panel';
+        return 'Student Dashboard';
     }
   }
 
@@ -695,7 +691,7 @@ class _RoleBasedDashboardShellState
       case UserRole.tutor:
         return 'TUTOR';
       case UserRole.admin:
-        return 'ADMIN';
+        return 'ADMIN (LIMITED)';
     }
   }
 }

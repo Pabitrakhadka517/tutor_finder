@@ -63,5 +63,12 @@
 	<string>This app needs access to your location to help tutors and students find each other nearby and provide accurate address information for your profile.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs access to your location to help tutors and students find each other nearby.</string>
+	<!-- Camera and Photo Library permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to let you take profile pictures and scan your certificates/documents.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs microphone access for recording video introductions.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to your photo library to let you choose an existing profile picture or upload your certificates/documents.</string>
 </dict>
 </plist>
