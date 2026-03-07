@@ -49,7 +49,7 @@ class _WalletPageState extends ConsumerState<WalletPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Wallet'),
-        backgroundColor: Colors.deepPurple.shade700,
+        backgroundColor: Colors.blue.shade700,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -62,14 +62,14 @@ class _WalletPageState extends ConsumerState<WalletPage> {
               padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.deepPurple.shade700, Colors.purple.shade400],
+                  colors: [Colors.blue.shade700, Colors.blue.shade400],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.deepPurple.withValues(alpha: 0.3),
+                    color: Colors.blue.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),

@@ -1,24 +1,97 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/providers/camera_providers.dart';
+import '../../../../core/widgets/media_preview_page.dart';
 
-class ProfileImagePicker extends StatefulWidget {
+class ProfileImagePicker extends ConsumerStatefulWidget {
   final String? profileImageUrl;
   final File? selectedImage;
-  final VoidCallback onTap;
+  final Function(File) onImageSelected;
 
   const ProfileImagePicker({
     super.key,
     this.profileImageUrl,
     this.selectedImage,
-    required this.onTap,
+    required this.onImageSelected,
   });
 
   @override
-  State<ProfileImagePicker> createState() => _ProfileImagePickerState();
+  ConsumerState<ProfileImagePicker> createState() => _ProfileImagePickerState();
 }
 
-class _ProfileImagePickerState extends State<ProfileImagePicker> {
+class _ProfileImagePickerState extends ConsumerState<ProfileImagePicker> {
   bool _imageLoadError = false;
+
+  void _showPickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(fromCamera: false);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(fromCamera: true);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage({required bool fromCamera}) async {
+    final cameraService = ref.read(cameraServiceProvider);
+
+    final granted = await cameraService.requestPermissions();
+    if (!granted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Camera permission denied')),
+        );
+      }
+      return;
+    }
+
+    File? image;
+    if (fromCamera) {
+      image = await cameraService.pickImageFromCamera();
+    } else {
+      image = await cameraService.pickImageFromGallery();
+    }
+
+    if (image != null && mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => MediaPreviewPage(
+            file: image!,
+            onConfirm: () async {
+              final compressed = await cameraService.compressImage(image!);
+              widget.onImageSelected(compressed ?? image!);
+              if (mounted) Navigator.of(context).pop();
+            },
+            onRetake: () {
+              Navigator.of(context).pop();
+              _pickImage(fromCamera: fromCamera);
+            },
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   void didUpdateWidget(ProfileImagePicker oldWidget) {
@@ -32,7 +105,7 @@ class _ProfileImagePickerState extends State<ProfileImagePicker> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: _showPickerOptions,
       child: Stack(
         children: [
           Container(
@@ -53,9 +126,7 @@ class _ProfileImagePickerState extends State<ProfileImagePicker> {
                 ),
               ],
             ),
-            child: ClipOval(
-              child: _buildImageContent(),
-            ),
+            child: ClipOval(child: _buildImageContent()),
           ),
           Positioned(
             bottom: 0,
@@ -104,7 +175,7 @@ class _ProfileImagePickerState extends State<ProfileImagePicker> {
             child: CircularProgressIndicator(
               value: loadingProgress.expectedTotalBytes != null
                   ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
+                        loadingProgress.expectedTotalBytes!
                   : null,
             ),
           );
@@ -129,11 +200,7 @@ class _ProfileImagePickerState extends State<ProfileImagePicker> {
   Widget _buildPlaceholder() {
     return Container(
       color: Colors.grey[200],
-      child: Icon(
-        Icons.person,
-        size: 60,
-        color: Colors.grey[400],
-      ),
+      child: Icon(Icons.person, size: 60, color: Colors.grey[400]),
     );
   }
 }

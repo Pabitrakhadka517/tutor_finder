@@ -60,12 +60,6 @@ class AuthRepositoryImpl implements AuthRepository {
   }) => signUp(email: email, password: password, role: UserRole.student);
 
   @override
-  Future<Either<Failure, User>> registerAdmin({
-    required String email,
-    required String password,
-  }) => signUp(email: email, password: password, role: UserRole.admin);
-
-  @override
   Future<Either<Failure, User>> registerTutor({
     required String email,
     required String password,

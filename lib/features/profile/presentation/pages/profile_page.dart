@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/profile_providers.dart';
@@ -129,38 +130,39 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           ProfileImagePicker(
             profileImageUrl: profile.profileImage,
             selectedImage: null,
-            onTap: _navigateToEditProfile,
+            onImageSelected: (File image) {
+              ref
+                  .read(profileNotifierProvider.notifier)
+                  .updateProfileImage(image);
+            },
           ),
           const SizedBox(height: 16),
-          
+
           // Name
           Text(
             profile.name,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          
+
           // Email
           Text(
             profile.email,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
-          
+
           // Role Badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: _getRoleColor(profile.role).withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _getRoleColor(profile.role),
-                width: 1,
-              ),
+              border: Border.all(color: _getRoleColor(profile.role), width: 1),
             ),
             child: Text(
               profile.role.toUpperCase(),
@@ -172,12 +174,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
           ),
           const SizedBox(height: 32),
-          
+
           // Profile Details
           _buildProfileDetails(profile),
-          
+
           const SizedBox(height: 24),
-          
+
           // Edit Button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -207,18 +209,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              _buildDetailRow(
-                Icons.phone_outlined,
-                'Phone',
-                profile.phone,
-              ),
+              _buildDetailRow(Icons.phone_outlined, 'Phone', profile.phone),
               const Divider(height: 24),
               _buildDetailRow(
                 Icons.school_outlined,
@@ -284,10 +280,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   void _navigateToEditProfile() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const EditProfilePage(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const EditProfilePage()));
   }
 }

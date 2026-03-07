@@ -11,7 +11,6 @@ import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/sign_up_usecase.dart';
 // Legacy use-case imports (kept for backward-compatibility)
 import '../../domain/usecases/register_usecase.dart';
-import '../../domain/usecases/register_admin_usecase.dart';
 import '../../domain/usecases/register_tutor_usecase.dart';
 import '../state/auth_state.dart';
 
@@ -30,7 +29,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   // Legacy use cases (kept for backward-compat)
   final RegisterUseCase registerUseCase;
-  final RegisterAdminUseCase registerAdminUseCase;
   final RegisterTutorUseCase registerTutorUseCase;
 
   // Direct repository access for password-reset (no use case yet)
@@ -44,7 +42,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required this.getCurrentUserRoleUseCase,
     required this.checkAuthStatusUseCase,
     required this.registerUseCase,
-    required this.registerAdminUseCase,
     required this.registerTutorUseCase,
     required this.authRepository,
   }) : super(const AuthState.initial());
@@ -56,7 +53,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Called on app start – checks stored token validity and role,
   /// then transitions to authenticated or unauthenticated.
   Future<void> checkAuthStatus() async {
-    state = const AuthState.loading();
+    state = const AuthState.splash();
+
+    // Small delay for branding visibility during splash
+    await Future.delayed(const Duration(seconds: 2));
 
     final isAuthenticated = await checkAuthStatusUseCase.call();
 
@@ -108,12 +108,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Register a new student (legacy – delegates to [signUp]).
   Future<void> register({required String email, required String password}) =>
       signUp(email: email, password: password, role: UserRole.student);
-
-  /// Register a new admin (legacy – delegates to [signUp]).
-  Future<void> registerAdmin({
-    required String email,
-    required String password,
-  }) => signUp(email: email, password: password, role: UserRole.admin);
 
   /// Register a new tutor (legacy – delegates to [signUp]).
   Future<void> registerTutor({

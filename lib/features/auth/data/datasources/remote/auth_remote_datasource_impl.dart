@@ -40,9 +40,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         case 'tutor':
           endpoint = ApiEndpoints.registerTutor;
           break;
-        case 'admin':
-          endpoint = ApiEndpoints.registerAdmin;
-          break;
         case 'student':
         default:
           endpoint = ApiEndpoints.register;
@@ -75,13 +72,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String email,
     required String password,
   }) => signUp(email: email, password: password, role: 'student');
-
-  /// ========== REGISTER ADMIN ==========
-  @override
-  Future<AuthResponseModel> registerAdmin({
-    required String email,
-    required String password,
-  }) => signUp(email: email, password: password, role: 'admin');
 
   /// ========== REGISTER TUTOR ==========
   @override

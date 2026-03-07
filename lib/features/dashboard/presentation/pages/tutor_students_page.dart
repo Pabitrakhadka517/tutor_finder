@@ -52,7 +52,7 @@ class _TutorStudentsPageState extends ConsumerState<TutorStudentsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Students'),
-        backgroundColor: Colors.purple.shade700,
+        backgroundColor: Colors.blue.shade700,
         foregroundColor: Colors.white,
       ),
       body: state.isLoading
@@ -189,7 +189,7 @@ class _StudentCard extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           radius: 24,
-          backgroundColor: Colors.purple.shade100,
+          backgroundColor: Colors.blue.shade100,
           backgroundImage: student.image != null
               ? NetworkImage(student.image!)
               : null,
@@ -197,7 +197,7 @@ class _StudentCard extends StatelessWidget {
               ? Text(
                   student.name.isNotEmpty ? student.name[0].toUpperCase() : 'S',
                   style: TextStyle(
-                    color: Colors.purple.shade700,
+                    color: Colors.blue.shade700,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
@@ -213,7 +213,7 @@ class _StudentCard extends StatelessWidget {
           style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
         ),
         trailing: IconButton(
-          icon: Icon(Icons.chat_bubble_outline, color: Colors.purple.shade700),
+          icon: Icon(Icons.chat_bubble_outline, color: Colors.blue.shade700),
           onPressed: onMessage,
           tooltip: 'Message',
         ),

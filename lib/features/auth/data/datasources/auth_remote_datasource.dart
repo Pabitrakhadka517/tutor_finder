@@ -22,12 +22,6 @@ abstract class AuthRemoteDataSource {
   });
 
   @Deprecated('Use signUp() with role parameter instead')
-  Future<AuthResponseModel> registerAdmin({
-    required String email,
-    required String password,
-  });
-
-  @Deprecated('Use signUp() with role parameter instead')
   Future<AuthResponseModel> registerTutor({
     required String email,
     required String password,
