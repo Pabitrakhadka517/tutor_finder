@@ -63,7 +63,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             subtitle: const Text('Receive app notifications'),
             value: _notificationsEnabled,
             onChanged: (val) => setState(() => _notificationsEnabled = val),
-            activeColor: Colors.blue,
+            activeThumbColor: Colors.blue,
           ),
           SwitchListTile(
             secondary: Icon(Icons.email_outlined, color: Colors.green.shade600),
@@ -71,7 +71,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             subtitle: const Text('Receive email updates'),
             value: _emailNotifications,
             onChanged: (val) => setState(() => _emailNotifications = val),
-            activeColor: Colors.blue,
+            activeThumbColor: Colors.blue,
           ),
           SwitchListTile(
             secondary: Icon(Icons.chat_outlined, color: Colors.purple.shade600),
@@ -79,7 +79,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             subtitle: const Text('New message alerts'),
             value: _chatNotifications,
             onChanged: (val) => setState(() => _chatNotifications = val),
-            activeColor: Colors.blue,
+            activeThumbColor: Colors.blue,
           ),
           SwitchListTile(
             secondary: Icon(
@@ -90,7 +90,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             subtitle: const Text('Session start reminders'),
             value: _bookingReminders,
             onChanged: (val) => setState(() => _bookingReminders = val),
-            activeColor: Colors.blue,
+            activeThumbColor: Colors.blue,
           ),
 
           const Divider(height: 1),

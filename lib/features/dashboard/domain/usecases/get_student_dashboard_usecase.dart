@@ -221,8 +221,7 @@ class GetStudentDashboardUseCase {
   StudentDashboardEntity _enhanceDashboardData(
     StudentDashboardEntity dashboard,
   ) {
-    // Add calculated aggregates and business insights
-    final aggregates = dashboard.calculateAggregates();
+    // Add calculated aggregates and business insights when needed.
 
     // You could add additional business logic here such as:
     // - Learning recommendations based on subjects

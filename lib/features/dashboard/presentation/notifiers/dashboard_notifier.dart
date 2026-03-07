@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasources/dashboard_remote_datasource.dart';
 import '../../domain/dashboard_repository.dart';
-import '../../domain/entities/dashboard_entity.dart';
 import '../state/dashboard_state.dart';
 
 class DashboardNotifier extends StateNotifier<DashboardState> {

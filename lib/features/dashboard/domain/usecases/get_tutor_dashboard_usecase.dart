@@ -285,8 +285,7 @@ class GetTutorDashboardUseCase {
   }
 
   TutorDashboardEntity _enhanceDashboardData(TutorDashboardEntity dashboard) {
-    // Add calculated aggregates and business insights
-    final aggregates = dashboard.calculateAggregates();
+    // Add calculated aggregates and business insights when needed.
 
     // Additional business logic could include:
     // - Performance recommendations
@@ -343,10 +342,11 @@ class GetTutorDashboardUseCase {
     if (isActive) score += 20;
 
     // Business growth score (10%)
-    if (dashboard.totalStudentsWorkedWith > 10)
+    if (dashboard.totalStudentsWorkedWith > 10) {
       score += 10;
-    else
+    } else {
       score += (dashboard.totalStudentsWorkedWith / 10.0) * 10;
+    }
 
     return score.clamp(0.0, 100.0);
   }

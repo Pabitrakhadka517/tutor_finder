@@ -137,7 +137,7 @@ class TutorDashboardDto with _$TutorDashboardDto {
     required List<String> teachingSubjects,
     required List<RecentBookingDto> recentBookings,
     required TutorPerformanceDto? performance,
-    @JsonKey(name: 'verification_status') required String verificationStatus,
+    required String verificationStatus,
     required DateTime lastUpdated,
     required DateTime createdAt,
     Map<String, dynamic>? metadata,
@@ -146,8 +146,15 @@ class TutorDashboardDto with _$TutorDashboardDto {
   const TutorDashboardDto._();
 
   /// Create DTO from JSON (MongoDB/API response)
-  factory TutorDashboardDto.fromJson(Map<String, dynamic> json) =>
-      _$TutorDashboardDtoFromJson(json);
+  factory TutorDashboardDto.fromJson(Map<String, dynamic> json) {
+    final normalizedJson = Map<String, dynamic>.from(json);
+    if (normalizedJson.containsKey('verification_status') &&
+        !normalizedJson.containsKey('verificationStatus')) {
+      normalizedJson['verificationStatus'] =
+          normalizedJson['verification_status'];
+    }
+    return _$TutorDashboardDtoFromJson(normalizedJson);
+  }
 
   /// Convert DTO to domain entity
   TutorDashboardEntity toDomain() {

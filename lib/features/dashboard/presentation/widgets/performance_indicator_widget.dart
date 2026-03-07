@@ -6,8 +6,7 @@ import '../models/dashboard_presentation_model.dart';
 class PerformanceIndicatorWidget extends StatelessWidget {
   final PerformanceIndicatorData performanceData;
 
-  const PerformanceIndicatorWidget({Key? key, required this.performanceData})
-    : super(key: key);
+  const PerformanceIndicatorWidget({super.key, required this.performanceData});
 
   @override
   Widget build(BuildContext context) {

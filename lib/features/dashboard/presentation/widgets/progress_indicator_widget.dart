@@ -6,8 +6,7 @@ import '../models/dashboard_presentation_model.dart';
 class ProgressIndicatorWidget extends StatelessWidget {
   final ProgressIndicatorData progressData;
 
-  const ProgressIndicatorWidget({Key? key, required this.progressData})
-    : super(key: key);
+  const ProgressIndicatorWidget({super.key, required this.progressData});
 
   @override
   Widget build(BuildContext context) {

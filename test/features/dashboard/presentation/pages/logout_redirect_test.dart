@@ -8,7 +8,6 @@ import 'package:tutor_finder/core/error/failures.dart';
 import 'package:tutor_finder/core/services/socket/socket_service.dart';
 import 'package:tutor_finder/core/utils/either.dart';
 import 'package:tutor_finder/core/utils/unit.dart';
-import 'package:tutor_finder/features/auth/data/models/forgot_password_response.dart';
 import 'package:tutor_finder/features/auth/domain/entities/user.dart';
 import 'package:tutor_finder/features/auth/domain/repositories/auth_repository.dart';
 import 'package:tutor_finder/features/auth/domain/usecases/check_auth_status_usecase.dart';
@@ -16,7 +15,6 @@ import 'package:tutor_finder/features/auth/domain/usecases/get_current_user_role
 import 'package:tutor_finder/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:tutor_finder/features/auth/domain/usecases/login_usecase.dart';
 import 'package:tutor_finder/features/auth/domain/usecases/logout_usecase.dart';
-import 'package:tutor_finder/features/auth/domain/usecases/register_admin_usecase.dart';
 import 'package:tutor_finder/features/auth/domain/usecases/register_tutor_usecase.dart';
 import 'package:tutor_finder/features/auth/domain/usecases/register_usecase.dart';
 import 'package:tutor_finder/features/auth/domain/usecases/sign_up_usecase.dart';
@@ -58,7 +56,7 @@ void main() {
     );
   }
 
-  Future<void> _logoutFromDrawer(WidgetTester tester) async {
+  Future<void> logoutFromDrawer(WidgetTester tester) async {
     final scaffoldFinder = find.byWidgetPredicate(
       (widget) => widget is Scaffold && widget.drawer != null,
     );
@@ -88,7 +86,7 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest(UserRole.tutor));
       await tester.pumpAndSettle();
 
-      await _logoutFromDrawer(tester);
+      await logoutFromDrawer(tester);
 
       expect(find.text('Role Selection Test Page'), findsOneWidget);
     });
@@ -99,7 +97,7 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest(UserRole.student));
       await tester.pumpAndSettle();
 
-      await _logoutFromDrawer(tester);
+      await logoutFromDrawer(tester);
 
       expect(find.text('Role Selection Test Page'), findsOneWidget);
     });
@@ -118,7 +116,6 @@ class _TestAuthNotifier extends AuthNotifier {
         ),
         checkAuthStatusUseCase: CheckAuthStatusUseCase(_FakeAuthRepository()),
         registerUseCase: RegisterUseCase(_FakeAuthRepository()),
-        registerAdminUseCase: RegisterAdminUseCase(_FakeAuthRepository()),
         registerTutorUseCase: RegisterTutorUseCase(_FakeAuthRepository()),
         authRepository: _FakeAuthRepository(),
       ) {

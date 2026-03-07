@@ -1,6 +1,4 @@
-﻿import '../../domain/value_objects/user_role.dart';
-
-/// Base class for dashboard statistics
+﻿/// Base class for dashboard statistics
 abstract class DashboardEntity {
   const DashboardEntity();
 
@@ -52,7 +50,9 @@ class StudentDashboardEntity extends DashboardEntity {
 
   @override
   Map<String, dynamic> calculateAggregates() {
-    final completionRate = totalBookings > 0 ? (completedBookings / totalBookings * 100) : 0.0;
+    final completionRate = totalBookings > 0
+        ? (completedBookings / totalBookings * 100)
+        : 0.0;
     return {
       'completionRate': completionRate,
       'hasUpcomingBookings': upcomingBookings > 0,
@@ -61,21 +61,31 @@ class StudentDashboardEntity extends DashboardEntity {
 
   @override
   Map<String, dynamic> toMap() => {
-    'id': id, 'studentId': studentId, 'totalBookings': totalBookings,
-    'upcomingBookings': upcomingBookings, 'completedBookings': completedBookings,
-    'cancelledBookings': cancelledBookings, 'totalSpent': totalSpent,
-    'averageSessionCost': averageSessionCost, 'totalHoursLearned': totalHoursLearned,
-    'totalTutorsWorkedWith': totalTutorsWorkedWith, 'favoriteSubjects': favoriteSubjects,
+    'id': id,
+    'studentId': studentId,
+    'totalBookings': totalBookings,
+    'upcomingBookings': upcomingBookings,
+    'completedBookings': completedBookings,
+    'cancelledBookings': cancelledBookings,
+    'totalSpent': totalSpent,
+    'averageSessionCost': averageSessionCost,
+    'totalHoursLearned': totalHoursLearned,
+    'totalTutorsWorkedWith': totalTutorsWorkedWith,
+    'favoriteSubjects': favoriteSubjects,
     'recentBookings': recentBookings.map((b) => b.toMap()).toList(),
     'recentTransactions': recentTransactions.map((t) => t.toMap()).toList(),
-    'progress': progress?.toMap(), 'lastUpdated': lastUpdated.toIso8601String(),
-    'createdAt': createdAt.toIso8601String(), 'metadata': metadata,
+    'progress': progress?.toMap(),
+    'lastUpdated': lastUpdated.toIso8601String(),
+    'createdAt': createdAt.toIso8601String(),
+    'metadata': metadata,
   };
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is StudentDashboardEntity && other.id == id && other.studentId == studentId;
+      other is StudentDashboardEntity &&
+          other.id == id &&
+          other.studentId == studentId;
 
   @override
   int get hashCode => id.hashCode ^ studentId.hashCode;
@@ -131,7 +141,9 @@ class TutorDashboardEntity extends DashboardEntity {
 
   @override
   Map<String, dynamic> calculateAggregates() {
-    final completionRate = totalBookings > 0 ? (completedBookings / totalBookings * 100) : 0.0;
+    final completionRate = totalBookings > 0
+        ? (completedBookings / totalBookings * 100)
+        : 0.0;
     return {
       'completionRate': completionRate,
       'potentialEarnings': totalEarnings + pendingEarnings,
@@ -141,23 +153,34 @@ class TutorDashboardEntity extends DashboardEntity {
 
   @override
   Map<String, dynamic> toMap() => {
-    'id': id, 'tutorId': tutorId, 'totalEarnings': totalEarnings,
-    'thisMonthEarnings': thisMonthEarnings, 'pendingEarnings': pendingEarnings,
-    'totalStudentsWorkedWith': totalStudentsWorkedWith, 'totalBookings': totalBookings,
-    'completedBookings': completedBookings, 'pendingBookings': pendingBookings,
-    'cancelledBookings': cancelledBookings, 'averageRating': averageRating,
-    'totalReviews': totalReviews, 'teachingSubjects': teachingSubjects,
+    'id': id,
+    'tutorId': tutorId,
+    'totalEarnings': totalEarnings,
+    'thisMonthEarnings': thisMonthEarnings,
+    'pendingEarnings': pendingEarnings,
+    'totalStudentsWorkedWith': totalStudentsWorkedWith,
+    'totalBookings': totalBookings,
+    'completedBookings': completedBookings,
+    'pendingBookings': pendingBookings,
+    'cancelledBookings': cancelledBookings,
+    'averageRating': averageRating,
+    'totalReviews': totalReviews,
+    'teachingSubjects': teachingSubjects,
     'verificationStatus': verificationStatus.toString(),
     'recentBookings': recentBookings.map((b) => b.toMap()).toList(),
     'recentTransactions': recentTransactions.map((t) => t.toMap()).toList(),
-    'performance': performance?.toMap(), 'lastUpdated': lastUpdated.toIso8601String(),
-    'createdAt': createdAt.toIso8601String(), 'metadata': metadata,
+    'performance': performance?.toMap(),
+    'lastUpdated': lastUpdated.toIso8601String(),
+    'createdAt': createdAt.toIso8601String(),
+    'metadata': metadata,
   };
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is TutorDashboardEntity && other.id == id && other.tutorId == tutorId;
+      other is TutorDashboardEntity &&
+          other.id == id &&
+          other.tutorId == tutorId;
 
   @override
   int get hashCode => id.hashCode ^ tutorId.hashCode;
@@ -194,17 +217,31 @@ class RecentBookingEntity {
   });
 
   Map<String, dynamic> toMap() => {
-    'id': id, 'studentId': studentId, 'tutorId': tutorId, 'subject': subject,
-    'scheduledDate': scheduledDate.toIso8601String(), 'status': status.toString(),
-    'amount': amount, 'duration': duration, 'notes': notes,
+    'id': id,
+    'studentId': studentId,
+    'tutorId': tutorId,
+    'subject': subject,
+    'scheduledDate': scheduledDate.toIso8601String(),
+    'status': status.toString(),
+    'amount': amount,
+    'duration': duration,
+    'notes': notes,
   };
 
   @override
-  String toString() => 'RecentBookingEntity(id: $id, subject: $subject, status: $status)';
+  String toString() =>
+      'RecentBookingEntity(id: $id, subject: $subject, status: $status)';
 }
 
 /// Transaction type enum
-enum TransactionType { payment, earnings, refund, withdrawal, topup, commission }
+enum TransactionType {
+  payment,
+  earnings,
+  refund,
+  withdrawal,
+  topup,
+  commission,
+}
 
 /// Recent transaction information for dashboard display
 class RecentTransactionEntity {
@@ -234,13 +271,20 @@ class RecentTransactionEntity {
   });
 
   Map<String, dynamic> toMap() => {
-    'id': id, 'userId': userId, 'type': type.name, 'amount': amount,
-    'createdAt': createdAt.toIso8601String(), 'status': status.toString(),
-    'description': description, 'bookingId': bookingId, 'metadata': metadata,
+    'id': id,
+    'userId': userId,
+    'type': type.name,
+    'amount': amount,
+    'createdAt': createdAt.toIso8601String(),
+    'status': status.toString(),
+    'description': description,
+    'bookingId': bookingId,
+    'metadata': metadata,
   };
 
   @override
-  String toString() => 'RecentTransactionEntity(id: $id, type: $type, amount: $amount)';
+  String toString() =>
+      'RecentTransactionEntity(id: $id, type: $type, amount: $amount)';
 }
 
 /// Student progress tracking entity
@@ -252,7 +296,8 @@ class StudentProgressEntity {
   final DateTime lastProgressUpdate;
 
   // Legacy getters
-  int get totalSessionsCompleted => (learningStats['totalSessionsCompleted'] as int?) ?? 0;
+  int get totalSessionsCompleted =>
+      (learningStats['totalSessionsCompleted'] as int?) ?? 0;
   Map<String, int> get subjectDistribution =>
       (learningStats['subjectDistribution'] as Map<String, int>?) ?? {};
   double get averageSessionRating =>
@@ -269,8 +314,10 @@ class StudentProgressEntity {
   });
 
   Map<String, dynamic> toMap() => {
-    'studentId': studentId, 'subjectProgress': subjectProgress,
-    'completedMilestones': completedMilestones, 'learningStats': learningStats,
+    'studentId': studentId,
+    'subjectProgress': subjectProgress,
+    'completedMilestones': completedMilestones,
+    'learningStats': learningStats,
     'lastProgressUpdate': lastProgressUpdate.toIso8601String(),
   };
 }
@@ -285,7 +332,8 @@ class TutorPerformanceEntity {
   final DateTime lastPerformanceUpdate;
 
   // Legacy getters
-  int get totalSessionsDelivered => (performanceMetrics['totalSessionsDelivered'] as int?) ?? 0;
+  int get totalSessionsDelivered =>
+      (performanceMetrics['totalSessionsDelivered'] as int?) ?? 0;
   double get averageSessionDuration =>
       (performanceMetrics['averageSessionDuration'] as num?)?.toDouble() ?? 0.0;
   Map<String, int> get subjectExpertise =>
@@ -305,8 +353,10 @@ class TutorPerformanceEntity {
   });
 
   Map<String, dynamic> toMap() => {
-    'tutorId': tutorId, 'responseRate': responseRate,
-    'completionRate': completionRate, 'punctualityScore': punctualityScore,
+    'tutorId': tutorId,
+    'responseRate': responseRate,
+    'completionRate': completionRate,
+    'punctualityScore': punctualityScore,
     'performanceMetrics': performanceMetrics,
     'lastPerformanceUpdate': lastPerformanceUpdate.toIso8601String(),
   };
@@ -316,7 +366,15 @@ class TutorPerformanceEntity {
 enum VerificationStatus { pending, verified, rejected, expired }
 
 /// Booking status enum
-enum BookingStatus { pending, confirmed, inProgress, completed, cancelled, noShow, scheduled }
+enum BookingStatus {
+  pending,
+  confirmed,
+  inProgress,
+  completed,
+  cancelled,
+  noShow,
+  scheduled,
+}
 
 /// Transaction status enum
 enum TransactionStatus { pending, completed, failed, refunded, processing }

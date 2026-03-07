@@ -7,8 +7,7 @@ class UploadResourcePage extends ConsumerStatefulWidget {
   const UploadResourcePage({super.key});
 
   @override
-  ConsumerState<UploadResourcePage> createState() =>
-      _UploadResourcePageState();
+  ConsumerState<UploadResourcePage> createState() => _UploadResourcePageState();
 }
 
 class _UploadResourcePageState extends ConsumerState<UploadResourcePage> {
@@ -55,13 +54,15 @@ class _UploadResourcePageState extends ConsumerState<UploadResourcePage> {
       return;
     }
 
-    final success = await ref.read(studyNotifierProvider.notifier).uploadResource(
-      title: _titleController.text.trim(),
-      category: _categoryController.text.trim(),
-      type: _selectedType,
-      filePath: _selectedFilePath!,
-      isPublic: _isPublic,
-    );
+    final success = await ref
+        .read(studyNotifierProvider.notifier)
+        .uploadResource(
+          title: _titleController.text.trim(),
+          category: _categoryController.text.trim(),
+          type: _selectedType,
+          filePath: _selectedFilePath!,
+          isPublic: _isPublic,
+        );
 
     if (!mounted) return;
 
@@ -125,7 +126,7 @@ class _UploadResourcePageState extends ConsumerState<UploadResourcePage> {
 
             // Type dropdown
             DropdownButtonFormField<String>(
-              value: _selectedType,
+              initialValue: _selectedType,
               decoration: const InputDecoration(
                 labelText: 'Resource Type',
                 border: OutlineInputBorder(),
@@ -198,10 +199,7 @@ class _UploadResourcePageState extends ConsumerState<UploadResourcePage> {
                       const SizedBox(height: 4),
                       Text(
                         'PDF, DOC, PPT, TXT, ZIP',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[400],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                       ),
                     ],
                   ],

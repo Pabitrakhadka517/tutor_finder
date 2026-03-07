@@ -11,8 +11,11 @@ class TutorDashboardView extends StatelessWidget {
   final TutorDashboardPresentationModel dashboard;
   final VoidCallback? onRefresh;
 
-  const TutorDashboardView({Key? key, required this.dashboard, this.onRefresh})
-    : super(key: key);
+  const TutorDashboardView({
+    super.key,
+    required this.dashboard,
+    this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {

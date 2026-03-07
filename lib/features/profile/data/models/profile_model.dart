@@ -6,22 +6,31 @@ part 'profile_model.g.dart';
 
 @HiveType(typeId: 1) // Unique ID for ProfileModel
 class ProfileModel extends ProfileEntity {
+  @override
   @HiveField(0)
   final String id;
+  @override
   @HiveField(1)
   final String email;
+  @override
   @HiveField(2)
   final String role;
+  @override
   @HiveField(3)
   final String name;
+  @override
   @HiveField(4)
   final String phone;
+  @override
   @HiveField(5)
   final String speciality;
+  @override
   @HiveField(6)
   final String address;
+  @override
   @HiveField(7)
   final String? profileImage;
+  @override
   @HiveField(8)
   final String theme;
 

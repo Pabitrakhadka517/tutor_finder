@@ -41,10 +41,9 @@ class _DocumentCaptureWidgetState extends ConsumerState<DocumentCaptureWidget> {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => MediaPreviewPage(
-            file: file!,
+            file: file,
             onConfirm: () async {
-              File finalFile =
-                  await cameraService.compressImage(file!) ?? file!;
+              File finalFile = await cameraService.compressImage(file) ?? file;
               setState(() => _capturedFile = finalFile);
               widget.onFileCaptured(finalFile);
               if (mounted) Navigator.of(context).pop();

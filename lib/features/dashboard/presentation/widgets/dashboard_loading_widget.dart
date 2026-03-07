@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class DashboardLoadingWidget extends StatelessWidget {
   final String? message;
 
-  const DashboardLoadingWidget({Key? key, this.message}) : super(key: key);
+  const DashboardLoadingWidget({super.key, this.message});
 
   @override
   Widget build(BuildContext context) {

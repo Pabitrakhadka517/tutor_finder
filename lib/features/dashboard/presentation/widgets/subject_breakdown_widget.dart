@@ -7,8 +7,7 @@ class SubjectBreakdownWidget extends StatelessWidget {
   final List<SubjectStatistic> subjects;
   final String? title;
 
-  const SubjectBreakdownWidget({Key? key, required this.subjects, this.title})
-    : super(key: key);
+  const SubjectBreakdownWidget({super.key, required this.subjects, this.title});
 
   @override
   Widget build(BuildContext context) {

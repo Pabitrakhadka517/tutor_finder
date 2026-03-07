@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../domain/entities/dashboard_entity.dart';
 import '../../domain/failures/dashboard_failure.dart';
 import '../../domain/usecases/get_student_dashboard_usecase.dart';
 import '../../domain/usecases/get_tutor_dashboard_usecase.dart';
@@ -156,6 +155,18 @@ class DashboardController extends ChangeNotifier {
   /// Refresh dashboard data
   Future<void> refreshDashboard() async {
     if (_currentUserId == null || _currentUserRole == null) return;
+
+    final result = await _refreshDashboardUseCase.refreshDashboard(
+      _currentUserId!,
+      _currentUserRole!,
+      forceFullRefresh: true,
+    );
+
+    final failure = result.getLeftOrNull();
+    if (failure != null) {
+      _updateState(_state.copyWith(failure: failure));
+      return;
+    }
 
     await loadDashboard(forceRefresh: true);
   }

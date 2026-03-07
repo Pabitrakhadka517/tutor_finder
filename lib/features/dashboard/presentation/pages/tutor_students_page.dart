@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../booking/domain/entities/booking_entity.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../chat/presentation/pages/chat_room_page.dart';
 import '../../../chat/presentation/providers/chat_providers.dart';

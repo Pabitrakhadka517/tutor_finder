@@ -1,7 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../../../core/usecases/usecase.dart';
 import '../../data/services/review_notification_service.dart';
 import '../entities/review_entity.dart';
 import '../failures/review_failures.dart';

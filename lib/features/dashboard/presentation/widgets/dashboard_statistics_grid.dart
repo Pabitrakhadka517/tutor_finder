@@ -10,12 +10,12 @@ class DashboardStatisticsGrid extends StatelessWidget {
   final double childAspectRatio;
 
   const DashboardStatisticsGrid({
-    Key? key,
+    super.key,
     required this.statistics,
     this.title,
     this.crossAxisCount = 2,
     this.childAspectRatio = 1.5,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -54,8 +54,7 @@ class DashboardStatisticsGrid extends StatelessWidget {
 class DashboardStatisticCard extends StatelessWidget {
   final DashboardStatistic statistic;
 
-  const DashboardStatisticCard({Key? key, required this.statistic})
-    : super(key: key);
+  const DashboardStatisticCard({super.key, required this.statistic});
 
   @override
   Widget build(BuildContext context) {

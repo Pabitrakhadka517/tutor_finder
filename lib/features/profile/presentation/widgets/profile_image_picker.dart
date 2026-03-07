@@ -80,7 +80,7 @@ class _ProfileImagePickerState extends ConsumerState<ProfileImagePicker> {
             file: image!,
             onConfirm: () async {
               final compressed = await cameraService.compressImage(image!);
-              widget.onImageSelected(compressed ?? image!);
+              widget.onImageSelected(compressed ?? image);
               if (mounted) Navigator.of(context).pop();
             },
             onRetake: () {

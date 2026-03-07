@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/dashboard_controller.dart';
-import '../models/dashboard_presentation_model.dart';
 import '../../domain/value_objects/user_role.dart';
 import 'student_dashboard_view.dart';
 import 'tutor_dashboard_view.dart';
@@ -16,11 +15,11 @@ class DashboardWidget extends StatefulWidget {
   final VoidCallback? onRefresh;
 
   const DashboardWidget({
-    Key? key,
+    super.key,
     required this.userId,
     required this.userRole,
     this.onRefresh,
-  }) : super(key: key);
+  });
 
   @override
   State<DashboardWidget> createState() => _DashboardWidgetState();
@@ -110,8 +109,6 @@ class _DashboardWidgetState extends State<DashboardWidget>
         );
       case UserRole.admin:
         return _buildAdminDashboard();
-      default:
-        return _buildUnsupportedRoleState();
     }
   }
 
@@ -163,31 +160,6 @@ class _DashboardWidgetState extends State<DashboardWidget>
           Text(
             'Coming Soon',
             style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUnsupportedRoleState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.orange[400]),
-          const SizedBox(height: 16),
-          Text(
-            'Unsupported User Role',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(color: Colors.orange[600]),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Dashboard not available for this user role',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.orange[500]),
           ),
         ],
       ),

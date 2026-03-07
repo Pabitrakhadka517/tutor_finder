@@ -1,7 +1,6 @@
 import 'package:injectable/injectable.dart';
 
 import '../../../../core/utils/either.dart';
-import '../entities/dashboard_entity.dart';
 import '../failures/dashboard_failure.dart';
 import '../repositories/dashboard_repository.dart';
 import '../value_objects/user_role.dart';

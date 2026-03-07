@@ -9,11 +9,11 @@ class RecentActivityWidget extends StatelessWidget {
   final int maxItems;
 
   const RecentActivityWidget({
-    Key? key,
+    super.key,
     required this.activities,
     this.title,
     this.maxItems = 5,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -119,11 +119,11 @@ class RecentActivityItem extends StatelessWidget {
   final bool isLast;
 
   const RecentActivityItem({
-    Key? key,
+    super.key,
     required this.activity,
     this.isFirst = false,
     this.isLast = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

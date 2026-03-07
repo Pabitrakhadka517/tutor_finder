@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import '../providers/profile_providers.dart';
 import '../widgets/profile_image_picker.dart';
 import '../widgets/profile_form_field.dart';
@@ -47,22 +46,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     Future.microtask(
       () => ref.read(profileNotifierProvider.notifier).getProfile(),
     );
-  }
-
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 85,
-    );
-
-    if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
-    }
   }
 
   void _populateFields() {

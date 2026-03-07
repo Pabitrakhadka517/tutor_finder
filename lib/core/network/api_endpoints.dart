@@ -26,8 +26,8 @@ class ApiEndpoints {
   static const String getTutorProfile = '$users/tutors/{id}';
 
   // Booking endpoints
-  static const String createBooking = '$bookings';
-  static const String getBookings = '$bookings';
+  static const String createBooking = bookings;
+  static const String getBookings = bookings;
   static const String getBookingById = '$bookings/{id}';
   static const String updateBooking = '$bookings/{id}';
   static const String cancelBooking = '$bookings/{id}/cancel';
@@ -35,7 +35,7 @@ class ApiEndpoints {
 
   // Transaction endpoints
   static const String createPayment = '$transactions/payments';
-  static const String getTransactions = '$transactions';
+  static const String getTransactions = transactions;
   static const String getTransactionById = '$transactions/{id}';
   static const String processRefund = '$transactions/{id}/refund';
   static const String getWalletBalance = '$transactions/wallet/balance';
@@ -54,7 +54,7 @@ class ApiEndpoints {
   static const String checkChatAccess = '$chat/rooms/{id}/access';
 
   // Message endpoints
-  static const String createMessage = '$messages';
+  static const String createMessage = messages;
   static const String getMessage = '$messages/{id}';
   static const String getChatMessages = '$chat/rooms/{chatId}/messages';
   static const String markMessagesRead = '$chat/rooms/{chatId}/messages/read';
@@ -68,7 +68,7 @@ class ApiEndpoints {
 
   // Review endpoints
   static const String reviews = '/reviews';
-  static const String createReview = '$reviews';
+  static const String createReview = reviews;
   static const String getReview = '$reviews/{id}';
   static const String updateReview = '$reviews/{id}';
   static const String deleteReview = '$reviews/{id}';
@@ -84,7 +84,7 @@ class ApiEndpoints {
   static const String tutorRatings = '/tutor-ratings';
   static const String getTutorRating = '$tutorRatings/{tutorId}';
   static const String updateTutorRating = '$tutorRatings/{tutorId}';
-  static const String createTutorRating = '$tutorRatings';
+  static const String createTutorRating = tutorRatings;
   static const String getTopRatedTutors = '$tutorRatings/top-rated';
   static const String getMostReviewedTutors = '$tutorRatings/most-reviewed';
   static const String getPlatformRatingStats = '$tutorRatings/platform/stats';
@@ -93,9 +93,9 @@ class ApiEndpoints {
 
   // Notification endpoints
   static const String notifications = '/api/notifications';
-  static const String createNotification = '$notifications';
+  static const String createNotification = notifications;
   static const String getNotification = '$notifications/{id}';
-  static const String getNotifications = '$notifications';
+  static const String getNotifications = notifications;
   static const String getNotificationsUnreadCount =
       '$notifications/unread-count';
   static const String markAsRead = '$notifications/{id}/read';

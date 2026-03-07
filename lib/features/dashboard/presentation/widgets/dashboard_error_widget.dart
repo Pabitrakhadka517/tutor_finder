@@ -8,12 +8,12 @@ class DashboardErrorWidget extends StatelessWidget {
   final bool canRetry;
 
   const DashboardErrorWidget({
-    Key? key,
+    super.key,
     required this.error,
     this.onRetry,
     this.onClearError,
     this.canRetry = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

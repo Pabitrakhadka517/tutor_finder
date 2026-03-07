@@ -1,4 +1,5 @@
 /// Custom exceptions for error handling in data layer
+library;
 
 /// Exception thrown when a server error occurs
 class ServerException implements Exception {

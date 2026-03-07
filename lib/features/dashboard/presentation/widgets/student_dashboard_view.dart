@@ -12,10 +12,10 @@ class StudentDashboardView extends StatelessWidget {
   final VoidCallback? onRefresh;
 
   const StudentDashboardView({
-    Key? key,
+    super.key,
     required this.dashboard,
     this.onRefresh,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
