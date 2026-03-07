@@ -95,18 +95,33 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     );
   }
 
-  Future<bool> deleteProfileImage() async {
+  Future<void> deleteProfileImage() async {
     state = state.copyWith(isLoading: true, error: null);
     final result = await profileRepository.deleteProfileImage();
-    return result.fold(
-      (failure) {
-        state = state.copyWith(isLoading: false, error: failure.message);
-        return false;
-      },
-      (profile) {
-        state = state.copyWith(isLoading: false, profile: profile);
-        return true;
-      },
+    result.fold(
+      (failure) =>
+          state = state.copyWith(isLoading: false, error: failure.message),
+      (profile) => state = state.copyWith(isLoading: false, profile: profile),
+    );
+  }
+
+  Future<void> updateProfileImage(File image) async {
+    if (state.profile == null) return;
+
+    state = state.copyWith(isLoading: true, error: null);
+    final params = UpdateProfileParams(
+      name: state.profile!.name,
+      phone: state.profile!.phone,
+      speciality: state.profile!.speciality,
+      address: state.profile!.address,
+      image: image,
+      // Note: Latitude and Longitude are not in ProfileEntity, so we omit them here.
+    );
+    final result = await updateProfileUseCase(params);
+    result.fold(
+      (failure) =>
+          state = state.copyWith(isLoading: false, error: failure.message),
+      (profile) => state = state.copyWith(isLoading: false, profile: profile),
     );
   }
 }

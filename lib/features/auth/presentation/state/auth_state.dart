@@ -15,6 +15,12 @@ class AuthState extends Equatable {
       user = null,
       errorMessage = null;
 
+  /// Splash/Startup state
+  const AuthState.splash()
+    : status = AuthStatus.splash,
+      user = null,
+      errorMessage = null;
+
   /// Loading state
   const AuthState.loading()
     : status = AuthStatus.loading,
@@ -53,6 +59,7 @@ class AuthState extends Equatable {
 /// Enum for authentication status
 enum AuthStatus {
   initial,
+  splash,
   loading,
   authenticated,
   unauthenticated,

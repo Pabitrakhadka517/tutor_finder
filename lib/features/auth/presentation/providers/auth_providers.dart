@@ -11,7 +11,6 @@ import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/sign_up_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
-import '../../domain/usecases/register_admin_usecase.dart';
 import '../../domain/usecases/register_tutor_usecase.dart';
 import '../notifiers/auth_notifier.dart';
 import '../state/auth_state.dart';
@@ -76,10 +75,6 @@ final registerUseCaseProvider = Provider<RegisterUseCase>((ref) {
   return RegisterUseCase(ref.read(authRepositoryProvider));
 });
 
-final registerAdminUseCaseProvider = Provider<RegisterAdminUseCase>((ref) {
-  return RegisterAdminUseCase(ref.read(authRepositoryProvider));
-});
-
 final registerTutorUseCaseProvider = Provider<RegisterTutorUseCase>((ref) {
   return RegisterTutorUseCase(ref.read(authRepositoryProvider));
 });
@@ -99,7 +94,6 @@ final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((
     getCurrentUserRoleUseCase: ref.read(getCurrentUserRoleUseCaseProvider),
     checkAuthStatusUseCase: ref.read(checkAuthStatusUseCaseProvider),
     registerUseCase: ref.read(registerUseCaseProvider),
-    registerAdminUseCase: ref.read(registerAdminUseCaseProvider),
     registerTutorUseCase: ref.read(registerTutorUseCaseProvider),
     authRepository: ref.read(authRepositoryProvider),
   );

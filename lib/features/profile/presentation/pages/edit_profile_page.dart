@@ -155,7 +155,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           ProfileImagePicker(
             profileImageUrl: state.profile?.profileImage,
             selectedImage: _selectedImage,
-            onTap: _pickImage,
+            onImageSelected: (image) {
+              setState(() {
+                _selectedImage = image;
+              });
+            },
           ),
           const SizedBox(height: 12),
           Text(

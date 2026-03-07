@@ -25,9 +25,6 @@ import '../../features/review/presentation/pages/create_review_page.dart';
 import '../../features/study/presentation/pages/study_resources_page.dart';
 import '../../features/study/presentation/pages/my_resources_page.dart';
 import '../../features/study/presentation/pages/upload_resource_page.dart';
-import '../../features/admin/presentation/pages/admin_users_page.dart';
-import '../../features/admin/presentation/pages/admin_user_detail_page.dart';
-import '../../features/admin/presentation/pages/announcements_page.dart';
 
 /// Named route constants for the app
 class AppRoutes {
@@ -60,9 +57,6 @@ class AppRoutes {
   static const String studyResources = '/study';
   static const String myResources = '/study/my';
   static const String uploadResource = '/study/upload';
-  static const String adminUsers = '/admin/users';
-  static const String adminUserDetail = '/admin/users/detail';
-  static const String announcements = '/admin/announcements';
 
   // ================= Route Generator =================
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -175,16 +169,6 @@ class AppRoutes {
         return _buildRoute(const MyResourcesPage(), settings);
       case uploadResource:
         return _buildRoute(const UploadResourcePage(), settings);
-      case adminUsers:
-        return _buildRoute(const AdminUsersPage(), settings);
-      case adminUserDetail:
-        final args = settings.arguments as Map<String, dynamic>;
-        return _buildRoute(
-          AdminUserDetailPage(userId: args['userId']),
-          settings,
-        );
-      case announcements:
-        return _buildRoute(const AnnouncementsPage(), settings);
       default:
         return _buildRoute(
           Scaffold(

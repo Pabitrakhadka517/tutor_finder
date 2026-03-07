@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/tutor_providers.dart';
+import '../widgets/document_capture_widget.dart';
 
 /// Page for tutors to submit their profile for verification.
 /// The backend endpoint POST /api/tutors/my/verify/submit sets status to PENDING.
@@ -149,59 +151,78 @@ class _VerificationSubmissionPageState
   }
 
   Widget _buildRequirements() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DocumentCaptureWidget(
+          label: '1. National ID / Citizenship (Photo)',
+          onFileCaptured: (file) {
+            // Logic to store ID photo for submission
+          },
+        ),
+        const SizedBox(height: 20),
+        DocumentCaptureWidget(
+          label: '2. Educational Certificate (Photo)',
+          onFileCaptured: (file) {
+            // Logic to store Certificate photo for submission
+          },
+        ),
+        const SizedBox(height: 32),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Verification Requirements',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade900,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Verification Requirements Status',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade900,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _requirementItem(
+                Icons.person,
+                'Complete Profile',
+                'Full name, bio, and profile picture',
+              ),
+              _requirementItem(
+                Icons.school,
+                'Education Details',
+                'Add your qualifications and experience',
+              ),
+              _requirementItem(
+                Icons.subject,
+                'Subject Expertise',
+                'List at least one subject you teach',
+              ),
+              _requirementItem(
+                Icons.attach_money,
+                'Hourly Rate',
+                'Set your tutoring rate',
+              ),
+              _requirementItem(
+                Icons.schedule,
+                'Availability',
+                'Add at least one availability slot',
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          _requirementItem(
-            Icons.person,
-            'Complete Profile',
-            'Full name, bio, and profile picture',
-          ),
-          _requirementItem(
-            Icons.school,
-            'Education Details',
-            'Add your qualifications and experience',
-          ),
-          _requirementItem(
-            Icons.subject,
-            'Subject Expertise',
-            'List at least one subject you teach',
-          ),
-          _requirementItem(
-            Icons.attach_money,
-            'Hourly Rate',
-            'Set your tutoring rate',
-          ),
-          _requirementItem(
-            Icons.schedule,
-            'Availability',
-            'Add at least one availability slot',
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

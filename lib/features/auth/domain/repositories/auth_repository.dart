@@ -26,12 +26,6 @@ abstract class AuthRepository {
   });
 
   @Deprecated('Use signUp() with role parameter instead')
-  Future<Either<Failure, User>> registerAdmin({
-    required String email,
-    required String password,
-  });
-
-  @Deprecated('Use signUp() with role parameter instead')
   Future<Either<Failure, User>> registerTutor({
     required String email,
     required String password,
