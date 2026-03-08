@@ -106,11 +106,28 @@ class _TutorDetailPageState extends ConsumerState<TutorDetailPage> {
                 child: CircleAvatar(
                   radius: 50,
                   backgroundColor: Colors.white,
-                  backgroundImage: tutor.profileImage != null
-                      ? NetworkImage(tutor.profileImage!)
-                      : null,
-                  child: tutor.profileImage == null
-                      ? Text(
+                  child:
+                      tutor.profileImage != null &&
+                          tutor.profileImage!.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            tutor.profileImage!,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Text(
+                              tutor.fullName.isNotEmpty
+                                  ? tutor.fullName[0].toUpperCase()
+                                  : 'T',
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Text(
                           tutor.fullName.isNotEmpty
                               ? tutor.fullName[0].toUpperCase()
                               : 'T',
@@ -119,8 +136,7 @@ class _TutorDetailPageState extends ConsumerState<TutorDetailPage> {
                             fontWeight: FontWeight.bold,
                             color: Colors.blue.shade700,
                           ),
-                        )
-                      : null,
+                        ),
                 ),
               ),
             ),

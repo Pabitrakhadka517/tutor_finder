@@ -190,11 +190,27 @@ class _TutorCard extends StatelessWidget {
             CircleAvatar(
               radius: 30,
               backgroundColor: Colors.blue.shade100,
-              backgroundImage: tutor.profileImage != null
-                  ? NetworkImage(tutor.profileImage!)
-                  : null,
-              child: tutor.profileImage == null
-                  ? Text(
+              child:
+                  tutor.profileImage != null && tutor.profileImage!.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        tutor.profileImage!,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Text(
+                          tutor.fullName.isNotEmpty
+                              ? tutor.fullName[0].toUpperCase()
+                              : 'T',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Text(
                       tutor.fullName.isNotEmpty
                           ? tutor.fullName[0].toUpperCase()
                           : 'T',
@@ -203,8 +219,7 @@ class _TutorCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: Colors.blue.shade700,
                       ),
-                    )
-                  : null,
+                    ),
             ),
             const SizedBox(width: 16),
 

@@ -65,6 +65,7 @@ class PaymentInitModel extends PaymentInitEntity {
     required super.bookingId,
     required super.tutorId,
     required super.amount,
+    super.totalAmountStr,
     required super.productCode,
     required super.transactionUuid,
     required super.signedFieldNames,
@@ -94,6 +95,10 @@ class PaymentInitModel extends PaymentInitEntity {
           : (payload['tAmt'] is num)
           ? (payload['tAmt'] as num).toDouble()
           : double.tryParse(payload['amount']?.toString() ?? '0') ?? 0.0,
+      totalAmountStr:
+          payload['total_amount']?.toString() ??
+          payload['amount']?.toString() ??
+          '',
       productCode:
           payload['productCode']?.toString() ??
           payload['product_code']?.toString() ??

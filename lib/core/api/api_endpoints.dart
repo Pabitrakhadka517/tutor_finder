@@ -7,6 +7,24 @@ import 'package:flutter/foundation.dart';
 class ApiEndpoints {
   ApiEndpoints._();
 
+  static const String _configuredHost = String.fromEnvironment(
+    'API_HOST',
+    defaultValue: '',
+  );
+  static const bool _useEmulatorHost = bool.fromEnvironment(
+    'USE_ANDROID_EMULATOR_HOST',
+    defaultValue: false,
+  );
+  static const bool _useAdbReverse = bool.fromEnvironment(
+    'USE_ADB_REVERSE',
+    defaultValue: false,
+  );
+  static const String _defaultLanHost = '192.168.1.67';
+  static const int _configuredPort = int.fromEnvironment(
+    'API_PORT',
+    defaultValue: 4000,
+  );
+
   // // ================= Base URLs =================
 
   // /// Android Emulator (Phone & Tablet)
@@ -32,21 +50,22 @@ class ApiEndpoints {
   //   }
   // }
 
-  // ── Change these two when switching devices ────────────────────────────────
-  static const bool isPhysicalDevice =
-      true; // true = real phone, false = emulator
-  static const String _ipAddress = '192.168.1.67'; // your PC's WiFi IP
-  static const int _port = 4000;
-
-  // ── Auto-detects correct host ──────────────────────────────────────────────
+  // API_HOST/API_PORT can be provided at run time with --dart-define.
+  // Android defaults to localhost through adb reverse in debug workflows.
+  // Toggle behaviors if needed:
+  // flutter run --dart-define=USE_ADB_REVERSE=false
+  // flutter run --dart-define=USE_ANDROID_EMULATOR_HOST=true
   static String get _host {
-    if (isPhysicalDevice) return _ipAddress;
+    if (_configuredHost.isNotEmpty) return _configuredHost;
     if (kIsWeb || Platform.isIOS) return 'localhost';
-    if (Platform.isAndroid) return '10.0.2.2';
+    if (Platform.isAndroid) {
+      if (_useAdbReverse) return 'localhost';
+      return _useEmulatorHost ? '10.0.2.2' : _defaultLanHost;
+    }
     return 'localhost';
   }
 
-  static String get baseUrl => 'http://$_host:$_port';
+  static String get baseUrl => 'http://$_host:$_configuredPort';
 
   // ================= Timeouts =================
   static const Duration connectionTimeout = Duration(seconds: 60);

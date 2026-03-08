@@ -132,18 +132,29 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.blue.shade100,
-                      backgroundImage: image != null
-                          ? NetworkImage(image)
-                          : null,
-                      child: image == null
-                          ? Text(
+                      child: image != null && image.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                image,
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Text(
+                                  name[0].toUpperCase(),
+                                  style: TextStyle(
+                                    color: Colors.blue.shade700,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Text(
                               name[0].toUpperCase(),
                               style: TextStyle(
                                 color: Colors.blue.shade700,
                                 fontWeight: FontWeight.bold,
                               ),
-                            )
-                          : null,
+                            ),
                     ),
                     title: Text(
                       name,

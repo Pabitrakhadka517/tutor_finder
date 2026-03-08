@@ -217,7 +217,11 @@ class _EsewaWebViewPageState extends State<EsewaWebViewPage> {
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
 
-    final amount = _amountForGateway(p.amount);
+    // Use the exact total_amount string from backend (what was signed)
+    // to avoid signature mismatch.
+    final amount = p.totalAmountStr.isNotEmpty
+        ? p.totalAmountStr
+        : _amountForGateway(p.amount);
 
     final html =
         '''
@@ -317,7 +321,11 @@ class _EsewaWebViewPageState extends State<EsewaWebViewPage> {
         .replaceFirst(RegExp(r'(\.\d*?)0+$'), r'$1');
   }
 
-  Future<bool> _onWillPop() async {
+  bool _isPopping = false;
+
+  void _onWillPop() {
+    if (_isPopping) return;
+    _isPopping = true;
     Navigator.of(context).pop(
       const EsewaWebViewResult(
         isSuccess: false,
@@ -325,14 +333,14 @@ class _EsewaWebViewPageState extends State<EsewaWebViewPage> {
         message: 'Payment flow cancelled by user.',
       ),
     );
-    return false;
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (_, __) {
+      onPopInvokedWithResult: (didPop, __) {
+        if (didPop) return;
         _onWillPop();
       },
       child: Scaffold(

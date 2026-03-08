@@ -241,9 +241,23 @@ class UserAvatar extends StatelessWidget {
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       return CircleAvatar(
         radius: radius,
-        backgroundImage: NetworkImage(imageUrl!),
-        onBackgroundImageError: (_, __) {},
-        child: null,
+        backgroundColor: Colors.blue.shade100,
+        child: ClipOval(
+          child: Image.network(
+            imageUrl!,
+            width: radius * 2,
+            height: radius * 2,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Text(
+              _getInitials(name),
+              style: TextStyle(
+                fontSize: radius * 0.7,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade700,
+              ),
+            ),
+          ),
+        ),
       );
     }
     return CircleAvatar(

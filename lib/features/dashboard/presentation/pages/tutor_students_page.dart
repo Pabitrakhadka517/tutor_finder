@@ -189,19 +189,33 @@ class _StudentCard extends StatelessWidget {
         leading: CircleAvatar(
           radius: 24,
           backgroundColor: Colors.blue.shade100,
-          backgroundImage: student.image != null
-              ? NetworkImage(student.image!)
-              : null,
-          child: student.image == null
-              ? Text(
+          child: student.image != null && student.image!.isNotEmpty
+              ? ClipOval(
+                  child: Image.network(
+                    student.image!,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Text(
+                      student.name.isNotEmpty
+                          ? student.name[0].toUpperCase()
+                          : 'S',
+                      style: TextStyle(
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                )
+              : Text(
                   student.name.isNotEmpty ? student.name[0].toUpperCase() : 'S',
                   style: TextStyle(
                     color: Colors.blue.shade700,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
-                )
-              : null,
+                ),
         ),
         title: Text(
           student.name,

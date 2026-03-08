@@ -232,11 +232,27 @@ class _CreateBookingPageState extends ConsumerState<CreateBookingPage> {
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: Colors.blue.shade200,
-                    backgroundImage: widget.tutor.profileImage != null
-                        ? NetworkImage(widget.tutor.profileImage!)
-                        : null,
-                    child: widget.tutor.profileImage == null
-                        ? Text(
+                    child:
+                        widget.tutor.profileImage != null &&
+                            widget.tutor.profileImage!.isNotEmpty
+                        ? ClipOval(
+                            child: Image.network(
+                              widget.tutor.profileImage!,
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Text(
+                                widget.tutor.fullName.isNotEmpty
+                                    ? widget.tutor.fullName[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Text(
                             widget.tutor.fullName.isNotEmpty
                                 ? widget.tutor.fullName[0].toUpperCase()
                                 : '?',
@@ -244,8 +260,7 @@ class _CreateBookingPageState extends ConsumerState<CreateBookingPage> {
                               fontSize: 24,
                               color: Colors.white,
                             ),
-                          )
-                        : null,
+                          ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(

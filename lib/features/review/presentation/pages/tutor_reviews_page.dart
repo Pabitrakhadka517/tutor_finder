@@ -99,21 +99,38 @@ class _TutorReviewsPageState extends ConsumerState<TutorReviewsPage> {
                                         CircleAvatar(
                                           radius: 18,
                                           backgroundColor: Colors.blue.shade100,
-                                          backgroundImage:
-                                              review.studentImage != null
-                                              ? NetworkImage(
-                                                  review.studentImage!,
+                                          child:
+                                              review.studentImage != null &&
+                                                  review
+                                                      .studentImage!
+                                                      .isNotEmpty
+                                              ? ClipOval(
+                                                  child: Image.network(
+                                                    review.studentImage!,
+                                                    width: 36,
+                                                    height: 36,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (_, __, ___) => Text(
+                                                          (review.studentName ??
+                                                                  'S')[0]
+                                                              .toUpperCase(),
+                                                          style:
+                                                              const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                        ),
+                                                  ),
                                                 )
-                                              : null,
-                                          child: review.studentImage == null
-                                              ? Text(
+                                              : Text(
                                                   (review.studentName ?? 'S')[0]
                                                       .toUpperCase(),
                                                   style: const TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                   ),
-                                                )
-                                              : null,
+                                                ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(

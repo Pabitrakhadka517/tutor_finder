@@ -13,9 +13,10 @@ class AppConfig {
   });
 
   /// Default development config
+  /// Use your PC's local IP so physical Android devices can connect
   static const AppConfig development = AppConfig(
-    baseUrl: 'http://localhost:4000/api',
-    wsUrl: 'ws://localhost:4000',
+    baseUrl: 'http://192.168.1.67:4000/api',
+    wsUrl: 'ws://192.168.1.67:4000',
   );
 
   /// Production config — override in main.dart

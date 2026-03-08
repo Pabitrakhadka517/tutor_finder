@@ -44,6 +44,9 @@ class PaymentInitEntity extends Equatable {
   final String bookingId;
   final String tutorId;
   final double amount;
+
+  /// Exact total_amount string from backend, used in signature.
+  final String totalAmountStr;
   final String productCode;
   final String transactionUuid;
   final String signedFieldNames;
@@ -57,6 +60,7 @@ class PaymentInitEntity extends Equatable {
     required this.bookingId,
     required this.tutorId,
     required this.amount,
+    this.totalAmountStr = '',
     required this.productCode,
     required this.transactionUuid,
     required this.signedFieldNames,
@@ -73,6 +77,7 @@ class PaymentInitEntity extends Equatable {
     tutorId,
     transactionUuid,
     amount,
+    totalAmountStr,
     productCode,
     signedFieldNames,
     signature,
